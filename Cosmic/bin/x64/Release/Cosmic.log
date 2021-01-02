@@ -1,0 +1,26 @@
+﻿  Main.cpp
+  Physics.cpp
+  Player.cpp
+  World.cpp
+  Camera.cpp
+  EnemyGrunt.cpp
+  Entity.cpp
+  Environment.cpp
+  Turret.cpp
+  Editor.cpp
+  GeneralWindow.cpp
+  KeyInput.cpp
+  MouseInput.cpp
+  CosmicGeometry.cpp
+  Platform.cpp
+  Win32Platform.cpp
+  DirectX11Renderer.cpp
+  Assets.cpp
+  FileParsers.cpp
+  RetainLock.cpp
+  Generating code
+  577 of 5207 functions (11.1%) were compiled, the rest were copied from previous compilation.
+    269 functions were new in current compilation
+    446 functions had inline decision re-evaluated but remain unchanged
+  Finished generating code
+  Cosmic.vcxproj -> F:\Telescope\Cosmic\build\x64\Release\Cosmic.exe
