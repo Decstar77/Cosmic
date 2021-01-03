@@ -10,6 +10,7 @@
 #include "src/editor/Editor.h"
 #include "Debug.h"
 #include "src/core/IntrospectedEnums.h"
+#include "src/core/NavMesh.h"
 #include "src/core/entities/Camera.h"
 #include "src/core/entities/Environment.h"
 #include "src/core/entities/Turret.h"
@@ -18,58 +19,11 @@
 #include "src/core/Physics.h"
 using namespace cm;
 
-struct ContactInfo
-{
-	Vec3f normal;
-	Vec3f point;
-	real32 penetration;
-};
-
-bool CheckContact(const OBB &obb, const Plane &plane, ContactInfo *info)
-{
-	if (CheckIntersectionOBBPlane(obb, plane))
-	{
-		Mat4f mat(obb.basis.mat, obb.center);
-		Vec3f extents = obb.extents;
-
-		Vec3f vertices[8] = {
-			Vec3f(Vec4f(extents, 1) * mat),
-			Vec3f(Vec4f(extents * -1.0f, 1) * mat),
-			Vec3f((Vec4f(-extents.x, extents.y, extents.z, 1)) * mat),
-			Vec3f((Vec4f(extents.x, -extents.y, extents.z, 1)) * mat),
-			Vec3f((Vec4f(extents.x, extents.y, -extents.z, 1)) * mat),
-			Vec3f((Vec4f(-extents.x, -extents.y, extents.z, 1)) * mat),
-			Vec3f((Vec4f(extents.x, -extents.y, -extents.z, 1)) * mat),
-			Vec3f((Vec4f(-extents.x, extents.y, -extents.z, 1)) * mat)
-		};
-
-		real32 d = GetPlaneScalar(plane);
-
-		for (int32 i = 0; i < 8; i++)
-		{
-			real32 dist = Dot(plane.normal, vertices[i]);
-
-			if (dist < d)
-			{
-				info->point = vertices[i] + (plane.normal * (d - dist));
-				info->normal = plane.normal;
-				info->penetration = d - dist;
-
-				LOG(dist);
-				LOG(d);
-
-				return true;
-			}
-		}
-	}
-
-	return false;
-}
-
 #if 1
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
 {
 	std::unique_ptr<Window> window = std::make_unique<Window>("Cosmic", Vec2f(1920, 1080), hInstance);
+
 
 	if (window->IsOpen())
 	{
@@ -121,6 +75,11 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 
 		world->CreatePlayer();
 
+		while (!asset_table->GetRawMesh(GameState::GetAssetTable()->FindMeshEntry("TL_Proto_ConcaveGrid")).IsValid())
+		{
+
+		}
+
 		Environment *c1 = world->CreateEntity<Environment>();
 		c1->name = "c1";
 		c1->transform.position = Vec3f(0.0f, 0.0f, 5.0f);
@@ -140,51 +99,10 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		Environment *ground = world->CreateEntity<Environment>();
 		ground->name = "ground";
 		ground->transform.position = Vec3f(0.0f, 0.0f, 0.0f);
-		ground->transform.scale = Vec3f(20.0f);
+		ground->transform.scale = Vec3f(2.0f);
 		ground->transform.orientation = EulerToQuat(Vec3f(0, 0, 0));
-		ground->SetMesh(GameState::GetAssetTable()->FindMeshEntry("CM_Bld_Floor5x5"));
+		ground->SetMesh(GameState::GetAssetTable()->FindMeshEntry("TL_Proto_ConcaveGrid"));
 		ground->SetCollider(asset_table->GetRawMesh(ground->GetMesh()).GetMeshCollider());
-
-		//PhysicsEntity *pm1 = world->CreateEntity<PhysicsEntity>();
-		//pm1->name = "pm1";
-		//pm1->transform.position = Vec3f(1.0f, 2.0f, 0.0f);
-		//pm1->transform.scale = Vec3f(0.1f);
-		//pm1->SetMesh(GameState::GetAssetTable()->FindMeshEntry("cube"));
-		//pm1->should_draw = false;
-		//pm1->SetMass(0);
-		//pm1->damping = 0.95f;
-		////pm1->acceration.y = -15.0f;
-
-		//PhysicsEntity *pm2 = world->CreateEntity<PhysicsEntity>();
-		//pm2->name = "pm2";
-		//pm2->transform.position = Vec3f(1.1f, 5.9f, 0.0f);
-		//pm2->transform.scale = Vec3f(0.1f);
-		//pm2->SetMesh(GameState::GetAssetTable()->FindMeshEntry("cube"));
-		//pm2->should_draw = false;
-		//pm2->SetMass(10.0f);
-		//pm2->damping = 0.95f;
-		//pm2->acceration.y = -15.0f;
-
-		//PhysicsEntity *pm3 = world->CreateEntity<PhysicsEntity>();
-		//pm3->name = "pm3";
-		//pm3->transform.position = Vec3f(0.9f, 6.9f, 0.0f);
-		//pm3->transform.scale = Vec3f(0.1f);
-		//pm3->SetMesh(GameState::GetAssetTable()->FindMeshEntry("cube"));
-		//pm3->should_draw = false;
-		//pm3->SetMass(10.0f);
-		//pm3->damping = 0.95f;
-		//pm3->acceration.y = -15.0f;
-
-		//PhysicsEntity *pm4 = world->CreateEntity<PhysicsEntity>();
-		//pm4->name = "pm4";
-		//pm4->transform.position = Vec3f(1.01f, 0.9f, 0.0f);
-		//pm4->transform.scale = Vec3f(0.1f);
-		//pm4->SetMesh(GameState::GetAssetTable()->FindMeshEntry("cube"));
-		//pm4->should_draw = false;
-		//pm4->SetMass(10.0f);
-		//pm4->damping = 0.95f;
-		//pm4->acceration.y = -15.0f;
-
 
 		PhysicsEntity *ri = world->CreateEntity<PhysicsEntity>();
 		ri->name = "ri";
@@ -200,43 +118,12 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		//ri->AddForceAtPoint(Vec3f(0, 0, -100), Vec3f(1, 0, -1));
 		ri->physics_type = PhysicsEntityType::RIGIDBODY;
 
+		NavMesh nav_mesh;
+		nav_mesh.CreateNavMesh(ground->GetGlobalCollider().mesh);
 
-		//for (int i = 0; i < 100; i++)
-		//{
-		//	Vec3f dir = RandomPointOnUnitHemisphere();
-		//	PhysicsEntity *pm1 = world->CreateEntity<PhysicsEntity>();
-		//	pm1->name = "pm";
-		//	pm1->transform.position = dir * 2.0f + Vec3f(0, 5.0f, 0);
-		//	pm1->veloctiy = dir * RandomReal(0.1f, 3.0f);
-		//	pm1->transform.scale = Vec3f(0.1f);
-		//	pm1->SetMesh(GameState::GetAssetTable()->FindMeshEntry("cube"));
-		//	pm1->should_draw = false;
-		//	pm1->SetMass(1);
-		//	pm1->damping = 0.95f;
-		//	pm1->acceration.y = -15.0f;
-		//}
-
-		//{
-		//	Connection con;
-		//	con.type = ConnectionType::CABLE;
-		//	con.mode = ConnectionMode::ENTITY_CONNECTED;
-		//	con.rest_length = 1.0f;
-		//	con.rod_restitution = 0.0f;
-		//	con.ref_self = pm2->CreateEntityReference();
-		//	con.ref_other = pm1->CreateEntityReference();
-		//	force_registry->connected_springs.push_back(con);
-		//}
-
-		//{
-		//	Connection con;
-		//	con.type = ConnectionType::CABLE;
-		//	con.mode = ConnectionMode::ENTITY_CONNECTED;
-		//	con.rest_length = 1.0f;
-		//	con.rod_restitution = 0.0f;
-		//	con.ref_self = pm3->CreateEntityReference();
-		//	con.ref_other = pm2->CreateEntityReference();
-		//	force_registry->connected_springs.push_back(con);
-		//}
+		NavAgent *nav_agent = world->CreateEntity<NavAgent>();
+		nav_agent->nav_mesh = &nav_mesh;
+		nav_agent->transform.position = Vec3f(10, 0, -10);
 
 		Entity *grunt = world->CreateEntity<EnemyGrunt>();
 		grunt->transform.position = Vec3f(3, 0, 3);
@@ -270,48 +157,33 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 				in_editor = !in_editor;
 			}
 
-			Clock real_clock;
-			real_clock.Start();
-			if (true || KeyInput::GetKeyJustDown(KeyCode::F6) || KeyInput::GetKeyHeldDown(KeyCode::F7))
+			static int32 waypoint_index = 1;
+
+			if (KeyInput::GetKeyJustDown(KeyCode::W))
 			{
-				force_registry->ApplyForces(dt);
-				world->UpdatePhysicsEntities(dt, physics_solver.get());
-
-				int32 iterration_count = 1;
-				for (int32 i = 0; i < iterration_count; i++)
+				nav_agent->transform.position = grunt->transform.position;
+				nav_agent->FindPathTo(world->player->transform.position);
+				waypoint_index = 1;
+			}
+			if (nav_agent->vertex_path.size() > 1)
+			{
+				Vec3f waypoint = nav_agent->vertex_path.at(waypoint_index);
+				Vec3f dir = Normalize(waypoint - grunt->transform.position);
+				grunt->transform.position += dir * 6.0f * dt;
+				grunt->LookAt(waypoint);
+				grunt->transform.orientation = grunt->transform.orientation * EulerToQuat(Vec3f(0, 180, 0));
+				if (Equal(grunt->transform.position, waypoint, 0.5f))
 				{
-					collision_detector->FindCollisions(world.get(), collision_resgisty.get(), dt);
-					collision_resgisty->Resolve(dt);
-				}
-
-
-				if (MouseInput::GetMouseJustDown(MouseCode::LEFT_MOUSE_BUTTON))
-				{
-					// 					OBB col = ri->GetGlobalCollider().obb;
-					// 					Ray ray = Camera::GetActiveCamera()->ShootRay(MouseInput::GetCurrentPosition(),
-					// 						Vec2f((real32)Platform::GetClientWidth(), (real32)Platform::GetClientHeight()));
-					// 
-					// 					real32 t;
-					// 					if (RaycastOBB(ray, col, &t))
-					// 					{
-					// 						Vec3f point = TravelDownRay(ray, t);
-					// 
-					// 						ri->AddForceAtPoint(ray.direction * 50.0f, point);
-					// 					}
+					waypoint_index++;
+					if (waypoint_index == nav_agent->vertex_path.size())
+					{
+						nav_agent->vertex_path.clear();
+					}
 				}
 			}
-			real_clock.End();
 
-
-			Plane ground_plane = CreatePlane(0, Vec3f(0, 1, 0));
-			OBB col = ri->GetGlobalCollider().obb;
-
-			ContactInfo cinfo;
-			if (CheckContact(col, ground_plane, &cinfo))
-			{
-				Debug::Push(cinfo.point);
-			}
-
+			Debug::Push(nav_mesh);
+			Debug::Push(nav_agent->vertex_path, Vec3f(0, 1, 0));
 			//std::cout << real_clock.Get().delta_milliseconds << std::endl;
 
 			if (!in_editor)
@@ -319,12 +191,6 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 				MouseInput::DisableMouse();
 				world->UpdateEntities(dt);
 
-				//int32 count = 80;
-				//real32 ddt = dt / (real32)count;
-				//for (int i = 0; i < count; i++)
-				//{
-
-				//}
 			}
 			else
 			{

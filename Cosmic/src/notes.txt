@@ -22,7 +22,8 @@ n
     - Diagramming    
 		
 - Collision Decection
-    - Complete capsule intersection tests
+    - Complete capsule intersection testss
+	- IsPointInsideTriangle doesn't seem to work for y axiss
 	- CAPSULE TRIANGLE NEEDS SPEED UP AND BETTER TESTING!!
     - Robustness, more tests
     - Manifolds

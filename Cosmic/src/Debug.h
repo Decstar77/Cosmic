@@ -1,5 +1,6 @@
 #pragma once
 #include "Cosmic.h"
+#include "src/core/NavMesh.h"
 #include "src/rendering/DirectX11Renderer.h"
 namespace cm
 {
@@ -312,9 +313,10 @@ namespace cm
 			}
 		}
 
-
 		static void Push(const Frustrum &frustrum, const real32 &distance = 50.0f)
 		{
+			ASSERT(renderer, "Debug renderer does not exist");
+
 			FrustrumCorners corners = CalculateFrustrumCorners(frustrum);
 
 			Debug::Push(corners.far_top_left, corners.far_top_right);
@@ -341,6 +343,27 @@ namespace cm
 			//Debug::Push(corners.near_top_right, corners.far_top_right);
 			//Debug::Push(corners.near_bottom_right, corners.far_bottom_right);
 			//Debug::Push(corners.near_bottom_left, corners.far_bottom_left);
+		}
+
+		static void Push(const NavMesh &mesh)
+		{
+			ASSERT(renderer, "Debug renderer does not exist");
+			for (const NavMesh::IndexedTriangle &tri : mesh.triangles)
+			{
+				Push(mesh.IndexedTriangleToTriangle(tri));
+			}
+		}
+
+		static void Push(const std::vector<Vec3f> &path, const Vec3f &offset = Vec3f(0))
+		{
+			ASSERT(renderer, "Debug renderer does not exist");
+			if (path.size() > 0)
+			{
+				for (int32 i = 0; i < (path.size() - 1); i++)
+				{
+					Push(path.at(i) + offset, path.at(i + 1) + offset);
+				}
+			}
 		}
 
 	public:

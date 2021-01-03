@@ -114,6 +114,7 @@
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="src\core\NavMesh.h" />
     <ClInclude Include="src\core\entities\EnemyGrunt.h" />
     <ClInclude Include="src\core\entities\Environment.h" />
     <ClInclude Include="src\core\entities\Camera.h" />
@@ -153,6 +154,7 @@
     <ClInclude Include="src\core\World.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\core\NavMesh.cpp" />
     <ClCompile Include="src\core\entities\EnemyGrunt.cpp" />
     <ClCompile Include="src\core\entities\Environment.cpp" />
     <ClCompile Include="src\core\entities\Camera.cpp" />
