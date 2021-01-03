@@ -95,7 +95,7 @@ namespace cm
 		behaviour = EntityBehaviour::PHYSICS_ENTITY;
 		physics_type = PhysicsEntityType::POINTMASS;
 		this->simulate_physics = true;
-		SetCollider(CreateSphere(Vec3f(0), 0.5f));
+		SetCollider(CreateSphere(Vec3f(0), 0.05f));
 
 		//force_generators.push_back(std::make_unique<DragForce>(DragForce()));
 

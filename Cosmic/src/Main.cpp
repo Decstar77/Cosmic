@@ -145,60 +145,60 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		ground->SetMesh(GameState::GetAssetTable()->FindMeshEntry("CM_Bld_Floor5x5"));
 		ground->SetCollider(asset_table->GetRawMesh(ground->GetMesh()).GetMeshCollider());
 
-		//PhysicsEntity *pm1 = world->CreateEntity<PhysicsEntity>();
-		//pm1->name = "pm1";
-		//pm1->transform.position = Vec3f(1.0f, 2.0f, 0.0f);
-		//pm1->transform.scale = Vec3f(0.1f);
-		//pm1->SetMesh(GameState::GetAssetTable()->FindMeshEntry("cube"));
-		//pm1->should_draw = false;
-		//pm1->SetMass(0);
-		//pm1->damping = 0.95f;
-		////pm1->acceration.y = -15.0f;
+		PhysicsEntity *pm1 = world->CreateEntity<PhysicsEntity>();
+		pm1->name = "pm1";
+		pm1->transform.position = Vec3f(1.0f, 2.0f, 0.0f);
+		pm1->transform.scale = Vec3f(0.1f);
+		pm1->SetMesh(GameState::GetAssetTable()->FindMeshEntry("cube"));
+		pm1->should_draw = false;
+		pm1->SetMass(0);
+		pm1->damping = 0.95f;
+		//pm1->acceration.y = -15.0f;
 
-		//PhysicsEntity *pm2 = world->CreateEntity<PhysicsEntity>();
-		//pm2->name = "pm2";
-		//pm2->transform.position = Vec3f(1.1f, 5.9f, 0.0f);
-		//pm2->transform.scale = Vec3f(0.1f);
-		//pm2->SetMesh(GameState::GetAssetTable()->FindMeshEntry("cube"));
-		//pm2->should_draw = false;
-		//pm2->SetMass(10.0f);
-		//pm2->damping = 0.95f;
-		//pm2->acceration.y = -15.0f;
+		PhysicsEntity *pm2 = world->CreateEntity<PhysicsEntity>();
+		pm2->name = "pm2";
+		pm2->transform.position = Vec3f(1.1f, 5.9f, 0.0f);
+		pm2->transform.scale = Vec3f(0.1f);
+		pm2->SetMesh(GameState::GetAssetTable()->FindMeshEntry("cube"));
+		pm2->should_draw = false;
+		pm2->SetMass(10.0f);
+		pm2->damping = 0.95f;
+		pm2->acceration.y = -15.0f;
 
-		//PhysicsEntity *pm3 = world->CreateEntity<PhysicsEntity>();
-		//pm3->name = "pm3";
-		//pm3->transform.position = Vec3f(0.9f, 6.9f, 0.0f);
-		//pm3->transform.scale = Vec3f(0.1f);
-		//pm3->SetMesh(GameState::GetAssetTable()->FindMeshEntry("cube"));
-		//pm3->should_draw = false;
-		//pm3->SetMass(10.0f);
-		//pm3->damping = 0.95f;
-		//pm3->acceration.y = -15.0f;
+		PhysicsEntity *pm3 = world->CreateEntity<PhysicsEntity>();
+		pm3->name = "pm3";
+		pm3->transform.position = Vec3f(0.9f, 6.9f, 0.0f);
+		pm3->transform.scale = Vec3f(0.1f);
+		pm3->SetMesh(GameState::GetAssetTable()->FindMeshEntry("cube"));
+		pm3->should_draw = false;
+		pm3->SetMass(10.0f);
+		pm3->damping = 0.95f;
+		pm3->acceration.y = -15.0f;
 
-		//PhysicsEntity *pm4 = world->CreateEntity<PhysicsEntity>();
-		//pm4->name = "pm4";
-		//pm4->transform.position = Vec3f(1.01f, 0.9f, 0.0f);
-		//pm4->transform.scale = Vec3f(0.1f);
-		//pm4->SetMesh(GameState::GetAssetTable()->FindMeshEntry("cube"));
-		//pm4->should_draw = false;
-		//pm4->SetMass(10.0f);
-		//pm4->damping = 0.95f;
-		//pm4->acceration.y = -15.0f;
+		PhysicsEntity *pm4 = world->CreateEntity<PhysicsEntity>();
+		pm4->name = "pm4";
+		pm4->transform.position = Vec3f(1.01f, 0.9f, 0.0f);
+		pm4->transform.scale = Vec3f(0.1f);
+		pm4->SetMesh(GameState::GetAssetTable()->FindMeshEntry("cube"));
+		pm4->should_draw = false;
+		pm4->SetMass(10.0f);
+		pm4->damping = 0.95f;
+		pm4->acceration.y = -15.0f;
 
 
-		PhysicsEntity *ri = world->CreateEntity<PhysicsEntity>();
-		ri->name = "ri";
-		ri->transform.position = Vec3f(1.0f, 2.0f, 0.0f);
-		ri->transform.scale = Vec3f(1.0f);
-		ri->SetMesh(GameState::GetAssetTable()->FindMeshEntry("cube"));
-		ri->SetCollider(CreateAABBFromCenterRadius(0, 1));
-		ri->SetCollider(CreateOBB(0, 1));
-		ri->should_draw = true;
-		ri->SetMass(10.0f);
-		ri->damping = 0.95f;
+		//PhysicsEntity *ri = world->CreateEntity<PhysicsEntity>();
+		//ri->name = "ri";
+		//ri->transform.position = Vec3f(1.0f, 2.0f, 0.0f);
+		//ri->transform.scale = Vec3f(1.0f);
+		//ri->SetMesh(GameState::GetAssetTable()->FindMeshEntry("cube"));
+		//ri->SetCollider(CreateAABBFromCenterRadius(0, 1));
+		//ri->SetCollider(CreateOBB(0, 1));
+		//ri->should_draw = true;
+		//ri->SetMass(10.0f);
+		//ri->damping = 0.95f;
 		//ri->torque = Vec3f(100, 100, 100);
 		//ri->AddForceAtPoint(Vec3f(0, 0, -100), Vec3f(1, 0, -1));
-		ri->physics_type = PhysicsEntityType::RIGIDBODY;
+		//ri->physics_type = PhysicsEntityType::RIGIDBODY;
 
 
 		//for (int i = 0; i < 100; i++)
@@ -272,7 +272,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 
 			Clock real_clock;
 			real_clock.Start();
-			if (true || KeyInput::GetKeyJustDown(KeyCode::F6) || KeyInput::GetKeyHeldDown(KeyCode::F7))
+			if (KeyInput::GetKeyJustDown(KeyCode::F6) || KeyInput::GetKeyHeldDown(KeyCode::F7))
 			{
 				force_registry->ApplyForces(dt);
 				world->UpdatePhysicsEntities(dt, physics_solver.get());
@@ -287,30 +287,30 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 
 				if (MouseInput::GetMouseJustDown(MouseCode::LEFT_MOUSE_BUTTON))
 				{
-					// 					OBB col = ri->GetGlobalCollider().obb;
-					// 					Ray ray = Camera::GetActiveCamera()->ShootRay(MouseInput::GetCurrentPosition(),
-					// 						Vec2f((real32)Platform::GetClientWidth(), (real32)Platform::GetClientHeight()));
-					// 
-					// 					real32 t;
-					// 					if (RaycastOBB(ray, col, &t))
-					// 					{
-					// 						Vec3f point = TravelDownRay(ray, t);
-					// 
-					// 						ri->AddForceAtPoint(ray.direction * 50.0f, point);
-					// 					}
+					//OBB col = ri->GetGlobalCollider().obb;
+					//Ray ray = Camera::GetActiveCamera()->ShootRay(MouseInput::GetCurrentPosition(),
+					//	Vec2f((real32)Platform::GetClientWidth(), (real32)Platform::GetClientHeight()));
+
+					//real32 t;
+					//if (RaycastOBB(ray, col, &t))
+					//{
+					//	Vec3f point = TravelDownRay(ray, t);
+
+					//	ri->AddForceAtPoint(ray.direction * 50.0f, point);
+					//}
 				}
 			}
 			real_clock.End();
 
 
-			Plane ground_plane = CreatePlane(0, Vec3f(0, 1, 0));
-			OBB col = ri->GetGlobalCollider().obb;
+			//Plane ground_plane = CreatePlane(0, Vec3f(0, 1, 0));
+			//OBB col = ri->GetGlobalCollider().obb;
 
-			ContactInfo cinfo;
-			if (CheckContact(col, ground_plane, &cinfo))
-			{
-				Debug::Push(cinfo.point);
-			}
+			//ContactInfo cinfo;
+			//if (CheckContact(col, ground_plane, &cinfo))
+			//{
+			//	Debug::Push(cinfo.point);
+			//}
 
 			//std::cout << real_clock.Get().delta_milliseconds << std::endl;
 
