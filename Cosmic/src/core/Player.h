@@ -3,6 +3,7 @@
 #include "src/input/KeyInput.h"
 #include "src/input/MouseInput.h"
 #include "src/core/entities/Camera.h"
+#include "src/core/SoundSystem.h"
 
 namespace cm
 {
@@ -14,6 +15,10 @@ namespace cm
 
 		Capsule collider;
 		EntityReference wall;
+
+		Speaker speaker;
+		real32 distance_since_last_walk_sound;
+		real32 distance_to_make_walk_sound;
 
 		real32 character_length;
 		real32 character_eye_height;

@@ -15,15 +15,15 @@
 #include "src/core/entities/Environment.h"
 #include "src/core/entities/Turret.h"
 #include "src/core/entities/EnemyGrunt.h"
-
 #include "src/core/Physics.h"
+#include "src/core/SoundSystem.h"
+
 using namespace cm;
 
 #if 1
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
 {
 	std::unique_ptr<Window> window = std::make_unique<Window>("Cosmic", Vec2f(1920, 1080), hInstance);
-
 
 	if (window->IsOpen())
 	{
@@ -36,6 +36,8 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 
 		std::unique_ptr<AssetTable> asset_table = std::make_unique<AssetTable>();
 		std::unique_ptr<AssetLoader> asset_loader = std::make_unique<AssetLoader>(asset_table.get(), "../res");
+
+		std::unique_ptr<SoundSystem> sound_system = std::make_unique<SoundSystem>();
 
 		std::unique_ptr<PhysicsSolver> physics_solver = std::make_unique<PhysicsSolver>();
 		std::unique_ptr<ForceRegistry> force_registry = std::make_unique<ForceRegistry>();
@@ -75,7 +77,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 
 		world->CreatePlayer();
 
-		while (!asset_table->GetRawMesh(GameState::GetAssetTable()->FindMeshEntry("TL_Proto_ConcaveGrid")).IsValid())
+		//while (!asset_table->GetRawMesh(GameState::GetAssetTable()->FindMeshEntry("TL_Proto_ConcaveGrid")).IsValid())
 		{
 
 		}
@@ -99,9 +101,9 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		Environment *ground = world->CreateEntity<Environment>();
 		ground->name = "ground";
 		ground->transform.position = Vec3f(0.0f, 0.0f, 0.0f);
-		ground->transform.scale = Vec3f(2.0f);
+		ground->transform.scale = Vec3f(20.0f);
 		ground->transform.orientation = EulerToQuat(Vec3f(0, 0, 0));
-		ground->SetMesh(GameState::GetAssetTable()->FindMeshEntry("TL_Proto_ConcaveGrid"));
+		ground->SetMesh(GameState::GetAssetTable()->FindMeshEntry("CM_Bld_Floor5x5"));
 		ground->SetCollider(asset_table->GetRawMesh(ground->GetMesh()).GetMeshCollider());
 
 		PhysicsEntity *ri = world->CreateEntity<PhysicsEntity>();
@@ -118,19 +120,26 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		//ri->AddForceAtPoint(Vec3f(0, 0, -100), Vec3f(1, 0, -1));
 		ri->physics_type = PhysicsEntityType::RIGIDBODY;
 
+		//NavAgent *nav_agent = world->CreateEntity<NavAgent>();
+		//nav_agent->nav_mesh = &nav_mesh;
+		//nav_agent->transform.position = Vec3f(10, 0, -10);
+
+		//engine->play2D("F:/Telescope/Cosmic/res/sounds/ophelia.mp3", false);
+
+
 		NavMesh nav_mesh;
 		nav_mesh.CreateNavMesh(ground->GetGlobalCollider().mesh);
-
-		NavAgent *nav_agent = world->CreateEntity<NavAgent>();
-		nav_agent->nav_mesh = &nav_mesh;
-		nav_agent->transform.position = Vec3f(10, 0, -10);
-
-		Entity *grunt = world->CreateEntity<EnemyGrunt>();
+		EnemyGrunt *grunt = world->CreateEntity<EnemyGrunt>();
 		grunt->transform.position = Vec3f(3, 0, 3);
 		grunt->LookAt(0);
+		grunt->nav_agent.nav_mesh = &nav_mesh;
 
 		Turret *turret = world->CreateEntity<Turret>();
 		turret->SetName("Turret boii");
+
+		Speaker game_music;
+		//game_music.PlaySound("footstepssounds/Footsteps_Casual_Metal_04.wav");
+
 
 		Clock clock;
 		clock.Start();
@@ -157,33 +166,8 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 				in_editor = !in_editor;
 			}
 
-			static int32 waypoint_index = 1;
 
-			if (KeyInput::GetKeyJustDown(KeyCode::W))
-			{
-				nav_agent->transform.position = grunt->transform.position;
-				nav_agent->FindPathTo(world->player->transform.position);
-				waypoint_index = 1;
-			}
-			if (nav_agent->vertex_path.size() > 1)
-			{
-				Vec3f waypoint = nav_agent->vertex_path.at(waypoint_index);
-				Vec3f dir = Normalize(waypoint - grunt->transform.position);
-				grunt->transform.position += dir * 6.0f * dt;
-				grunt->LookAt(waypoint);
-				grunt->transform.orientation = grunt->transform.orientation * EulerToQuat(Vec3f(0, 180, 0));
-				if (Equal(grunt->transform.position, waypoint, 0.5f))
-				{
-					waypoint_index++;
-					if (waypoint_index == nav_agent->vertex_path.size())
-					{
-						nav_agent->vertex_path.clear();
-					}
-				}
-			}
 
-			Debug::Push(nav_mesh);
-			Debug::Push(nav_agent->vertex_path, Vec3f(0, 1, 0));
 			//std::cout << real_clock.Get().delta_milliseconds << std::endl;
 
 			if (!in_editor)
@@ -198,6 +182,8 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 				editor->Update(&game_state);
 			}
 			//std::cout << "Update " << real_clock.Get().delta_milliseconds << std::endl;
+
+			sound_system->SetListenerTransform(Camera::GetActiveCamera()->GetGlobalTransform());
 
 			debug_renderer->SetMatrices(Camera::GetActiveCamera()->CalculateViewMatrix(), Camera::GetActiveCamera()->CalculateProjectionMatrix());
 			renderer->SetMatrices(Camera::GetActiveCamera()->CalculateViewMatrix(), Camera::GetActiveCamera()->CalculateProjectionMatrix());
@@ -235,5 +221,6 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 	{
 		Platform::ErrorBox("Could not open window");
 	}
+
 }
 #endif

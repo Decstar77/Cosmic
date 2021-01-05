@@ -119,56 +119,77 @@ namespace cm
 	}
 
 
+
 	NavAgent::NavAgent()
 	{
-		type = EntityType::ENEMY_DUDE;
-		name = "Nav agent";
 	}
 
 	NavAgent::~NavAgent()
 	{
-
 	}
 
-	void NavAgent::FindPathTo(Vec3f point)
+	cm::Vec3f NavAgent::GetCurrentWapoint()
 	{
-		vertex_path.clear();
-
-		NavMesh::IndexedTriangle from = nav_mesh->FindIndexedTriangleThatContainsPoint(transform.position);
-		point.y = 0;
-		NavMesh::IndexedTriangle to = nav_mesh->FindIndexedTriangleThatContainsPoint(point);
-
-		if (from.vertex1_index == -1)
+		if (path.size() == 1)
 		{
-			ASSERT(0, "NavAgent is not on nav mesh");
-			return;
+			return path.at(0);
 		}
 
-		if (to.vertex1_index == -1)
+		return path.at(current_waypoint);
+	}
+
+	void NavAgent::PassedWaypoint()
+	{
+		current_waypoint++;
+		if (current_waypoint == path.size())
 		{
-			ASSERT(0, "NavAgent is not on nav mesh");
+			current_waypoint--;
+		}
+	}
+
+	bool NavAgent::PathFinished()
+	{
+		return (current_waypoint + 1) == path.size();
+	}
+
+	void NavAgent::FindPathTo(Vec3f start, Vec3f end)
+	{
+		current_waypoint = 1;
+		path.clear();
+
+		start.y = 0;
+		end.y = 0;
+
+		NavMesh::IndexedTriangle from = nav_mesh->FindIndexedTriangleThatContainsPoint(start);
+		NavMesh::IndexedTriangle to = nav_mesh->FindIndexedTriangleThatContainsPoint(end);
+
+		path.push_back(start);
+
+		// @NOTE: Entity not on nav mesh
+		if (from.vertex1_index == -1 || to.vertex1_index == -1)
+		{
+			LOG("NAVMESH, entity not on nav mesh");
 			return;
 		}
 
 		// @NOTE: On the same triangle
-		if (from.Equal(to))
-		{
-			vertex_path.push_back(transform.position);
-			vertex_path.push_back(point);
+		if (from.Equal(to)) {
+
+			path.push_back(end);
 			return;
 		}
 
 
-		vertex_path.push_back(point);
+		path.push_back(end);
 
 		std::vector<TraversalNode> closed(nav_mesh->vertices.size());
 		std::queue<TraversalNode> open;
 
 		int32 starting_index;
 		{
-			real32 v1dist = DistanceSqrd(nav_mesh->vertices.at(from.vertex1_index).position, transform.position);
-			real32 v2dist = DistanceSqrd(nav_mesh->vertices.at(from.vertex2_index).position, transform.position);
-			real32 v3dist = DistanceSqrd(nav_mesh->vertices.at(from.vertex3_index).position, transform.position);
+			real32 v1dist = DistanceSqrd(nav_mesh->vertices.at(from.vertex1_index).position, start);
+			real32 v2dist = DistanceSqrd(nav_mesh->vertices.at(from.vertex2_index).position, start);
+			real32 v3dist = DistanceSqrd(nav_mesh->vertices.at(from.vertex3_index).position, start);
 			if (v1dist < v2dist)
 			{
 				if (v1dist < v3dist)
@@ -203,7 +224,7 @@ namespace cm
 		{
 			if (open.size() == 0)
 			{
-				ASSERT(0, "NavAgent could not find path to" + ToString(point));
+				ASSERT(0, "NavAgent could not find path to" + ToString(end));
 				return;
 			}
 
@@ -220,7 +241,7 @@ namespace cm
 					while (true)
 					{
 						const NavMesh::IndexedVertex &path_vertex = nav_mesh->vertices.at(node.index);
-						vertex_path.push_back(path_vertex.position);
+						path.push_back(path_vertex.position);
 
 						if (node.parent == -1)
 						{
@@ -230,7 +251,7 @@ namespace cm
 						node = closed.at(node.parent);
 					}
 
-					vertex_path.push_back(transform.position);
+					path.push_back(start);
 
 					break;
 				}
@@ -248,6 +269,6 @@ namespace cm
 			}
 		}
 
-		std::reverse(vertex_path.begin(), vertex_path.end());
+		std::reverse(path.begin(), path.end());
 	}
 }

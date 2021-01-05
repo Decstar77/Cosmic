@@ -73,6 +73,11 @@ namespace cm
 		Mat4f result = LookAtLH(transform.position, transform.position + direction, Vec3f(0, 1, 0));
 
 		camera->transform.orientation = (Mat4ToQuat(result));
+
+		if (MouseInput::GetMouseJustDown(MouseCode::LEFT_MOUSE_BUTTON))
+		{
+			speaker.PlaySound("gunsoundpack/gun_pistol_shot_01.wav");
+		}
 	}
 
 	static bool CollideAndSlide(const std::vector<Entity *> &terrian)
@@ -83,6 +88,8 @@ namespace cm
 	void Player::PlayerMove(const real32 &dt)
 	{
 		Basisf basis = camera->transform.GetBasis();
+
+		Vec3f starting_position = transform.position;
 
 		basis.forward.y = 0.0f;
 		basis.right.y = 0.0f;
@@ -188,7 +195,6 @@ namespace cm
 					}
 				}
 			}
-
 
 #if 0
 			Vec3f inv = Vec3f(1.0f) / collider.radius;
@@ -355,6 +361,18 @@ namespace cm
 #endif
 		}
 
+		Vec3f ending_position = transform.position;
+		if (grounded)
+		{
+			distance_to_make_walk_sound = 0.3f;
+			real32 distance_traveled_this_frame = DistanceSqrd(starting_position, ending_position);
+			distance_since_last_walk_sound += distance_traveled_this_frame;
+			if (distance_since_last_walk_sound >= distance_to_make_walk_sound)
+			{
+				distance_since_last_walk_sound = 0.0f;
+				speaker.PlaySound("footstepssounds/Footsteps_Casual_Metal_04.wav");
+			}
+		}
 		clock.End();
 		//std::cout << clock.Get().delta_milliseconds << std::endl;
 	}

@@ -24,7 +24,20 @@ namespace cm
 
 	void EnemyGrunt::Update(const real32 &dt)
 	{
-		//LookAt(world->player->transform.position);
+#if 0
+		nav_agent.FindPathTo(transform.position, world->player->transform.position);
+
+		Vec3f waypoint = nav_agent.GetCurrentWapoint();
+		Vec3f dir = Normalize(waypoint - transform.position);
+		transform.position += dir * 6.0f * dt;
+		LookAt(waypoint);
+		transform.orientation = transform.orientation * EulerToQuat(Vec3f(0, 180, 0));
+
+		if (Equal(transform.position, waypoint, 0.5f))
+		{
+			nav_agent.PassedWaypoint();
+		}
+#endif
 	}
 
 }

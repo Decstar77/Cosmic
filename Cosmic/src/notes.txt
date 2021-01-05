@@ -11,12 +11,20 @@
     - Basic rigid-body system
 	
 - AI
+	- Some intelgience ?
+
     - Pathfinding
-    - Some intelgience ?
+		- nav agent, nice interface (Easy)
+		- nav mesh
+			- sphere test with triangle (Easy)
+			- entity thinkness, miskosiki sum (hard)
+			- slope limit (hard)
+			- slice up mesh into convex poligons (Very hard) http://masc.cs.gmu.edu/wiki/ACD
+			- boolean operations (Very hard)
+	   
 
 - Editor    
 	- Secltion of mutliple entities
-n
 
 - Debug Code
     - Diagramming    
@@ -32,7 +40,7 @@ n
     - Sound effect triggers
     - Ambient sounds
     - Music
-    - Direct Sounds
+    - Move to xAudio2
 	   
 - Platform
     - fullscreen support

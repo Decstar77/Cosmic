@@ -80,17 +80,25 @@ namespace cm
 
 	};
 
-	class NavAgent : public Entity
+	class NavAgent
 	{
 	public:
 		NavMesh *nav_mesh; // @TODO: No raw pointer!!
 
+		int32 current_waypoint;
+		std::vector<Vec3f> path;
+
+	public:
+		void FindPathTo(Vec3f start, Vec3f end);
+
+		void PassedWaypoint();
+		bool PathFinished();
+		Vec3f GetCurrentWapoint();
+
+
+	public:
 		NavAgent();
 		~NavAgent();
-
-		std::vector<Vec3f> vertex_path;
-
-		void FindPathTo(Vec3f point);
 
 	private:
 		struct TraversalNode
