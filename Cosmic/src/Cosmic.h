@@ -75,6 +75,11 @@ typedef std::stringstream StringStream;
 typedef std::thread Thread;
 typedef std::atomic<bool> AtomicBool;
 
+
+// @TODO: Put into custom mesh class/file
+#define INVALID_MESH_ENTRY -1
+typedef int32 MeshEntry;
+
 #include "src/platforms/Platform.h"
 
 #endif

@@ -1,7 +1,6 @@
 #include "Entity.h"
+
 #include "src/core/World.h"
-
-
 
 namespace cm
 {

@@ -2,7 +2,6 @@
 #include "src/Cosmic.h"
 #include "src/math/CosmicMath.h"
 #include "src/math/CosmicGeometry.h"
-#include "src/serialization/Assets.h"
 
 namespace cm
 {
@@ -22,6 +21,7 @@ namespace cm
 
 	INTROSPECTED_ENUM(EntityType) {
 		INVALID = 0,
+			PARTICEL_EMITTER,
 			ENVIRONMENT,
 			CAMERA,
 			PLAYER,

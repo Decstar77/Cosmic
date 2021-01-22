@@ -102,9 +102,6 @@ namespace cm
 		DAE
 	};
 
-#define INVALID_MESH_ENTRY -1
-	typedef int32 MeshEntry;
-
 	struct MeshMetaData//MeshEntry
 	{
 		MeshEntry entry;

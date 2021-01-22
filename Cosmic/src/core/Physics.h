@@ -11,11 +11,6 @@ namespace cm
 			COUNT
 	};
 
-	class PointMass
-	{
-
-	};
-
 	class RigidBody
 	{
 

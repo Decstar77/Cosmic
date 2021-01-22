@@ -71,6 +71,7 @@
       <AdditionalIncludeDirectories>$(SolutionDir)Cosmic;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <ExceptionHandling>Sync</ExceptionHandling>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -114,6 +115,9 @@
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="src\core\Particles.h" />
+    <ClInclude Include="src\core\JobSystem.h" />
+    <ClInclude Include="src\util\BlockingQueue.h" />
     <ClInclude Include="src\core\SoundSystem.h" />
     <ClInclude Include="src\core\NavMesh.h" />
     <ClInclude Include="src\core\entities\EnemyGrunt.h" />
@@ -155,6 +159,9 @@
     <ClInclude Include="src\core\World.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\core\Particles.cpp" />
+    <ClCompile Include="src\core\JobSystem.cpp" />
+    <ClCompile Include="src\util\BlockingQueue.cpp" />
     <ClCompile Include="src\core\SoundSystem.cpp" />
     <ClCompile Include="src\core\NavMesh.cpp" />
     <ClCompile Include="src\core\entities\EnemyGrunt.cpp" />

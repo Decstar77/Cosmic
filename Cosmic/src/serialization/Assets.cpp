@@ -85,7 +85,20 @@ namespace cm
 	{
 		FolderResult mesh_folder = Platform::LoadFolder(path, ".obj");
 #if THREADED
+#if 0
 		worker = std::thread(&AssetLoader::DoLoadEntireFolderOfModels, this, mesh_folder);
+#else
+		MeshEntry entry = 0;
+		for (FileResult &mesh_file : mesh_folder.files)
+		{
+			ModelLoadJob *job = &model_jobs.emplace_back(mesh_file, entry, asset_table);
+
+			JobSystem::GetInstance()->AddJob(job);
+
+			entry++;
+		}
+#endif 
+
 #else
 		AssetLoader::DoLoadEntireFolderOfModels(mesh_folder);
 #endif
@@ -182,6 +195,33 @@ namespace cm
 		MeshMetaData mesh = mesh_meta_data.at(entry);
 
 		return mesh;
+	}
+
+
+
+	ModelLoadJob::ModelLoadJob(const FileResult &file_result, const MeshEntry &mesh_entry, AssetTable *asset_table)
+		: JobWork("ModelLoader"), mesh_file(file_result), mesh_entry(mesh_entry), asset_table(asset_table)
+	{
+
+	}
+
+	ModelLoadJob::~ModelLoadJob()
+	{
+
+	}
+
+	void ModelLoadJob::Process()
+	{
+		MeshMetaData mesh_data = asset_table->GetMeshMetaData(mesh_entry);
+
+		EditableMesh mesh = EditableMesh(mesh_file, mesh_data, MeshFileType::OBJ);
+
+		asset_table->models_lock.Lock();
+
+		asset_table->mesh_load_requests.emplace(mesh_entry);
+		asset_table->mesh_raw_data.at(mesh_entry) = mesh;
+
+		asset_table->models_lock.Unlock();
 	}
 
 }

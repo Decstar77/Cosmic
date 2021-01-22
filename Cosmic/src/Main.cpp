@@ -11,14 +11,17 @@
 #include "Debug.h"
 #include "src/core/IntrospectedEnums.h"
 #include "src/core/NavMesh.h"
+#include "src/core/Particles.h"
 #include "src/core/entities/Camera.h"
 #include "src/core/entities/Environment.h"
 #include "src/core/entities/Turret.h"
 #include "src/core/entities/EnemyGrunt.h"
 #include "src/core/Physics.h"
 #include "src/core/SoundSystem.h"
+#include "src/core/JobSystem.h"
 
 using namespace cm;
+
 
 #if 1
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
@@ -29,38 +32,30 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 	{
 		DirectXState::InitializeDirectX(window->GetHandle());
 		std::unique_ptr<DirectXImmediateRenderer> renderer = std::make_unique<DirectXImmediateRenderer>(window->GetHandle());
-		std::unique_ptr<DirectXDebugRenderer> debug_renderer = std::make_unique<DirectXDebugRenderer>();
 
+		// @TODO: Debug removal
+		std::unique_ptr<DirectXDebugRenderer> debug_renderer = std::make_unique<DirectXDebugRenderer>();
 		std::unique_ptr<Debug> debug = std::make_unique<Debug>(debug_renderer.get());
 		std::unique_ptr<Editor> editor = std::make_unique<Editor>();
 
+		std::unique_ptr<JobSystem> job_system = std::make_unique<JobSystem>(); // @TODO: Remove singloton
+
 		std::unique_ptr<AssetTable> asset_table = std::make_unique<AssetTable>();
-		std::unique_ptr<AssetLoader> asset_loader = std::make_unique<AssetLoader>(asset_table.get(), "../res");
+		std::unique_ptr<AssetLoader> asset_loader = std::make_unique<AssetLoader>(asset_table.get(), "../res"); // @TODO: Remove singloton
 
-		std::unique_ptr<SoundSystem> sound_system = std::make_unique<SoundSystem>();
+		std::unique_ptr<SoundSystem> sound_system = std::make_unique<SoundSystem>(); // @TODO: Remove singloton
 
-		std::unique_ptr<PhysicsSolver> physics_solver = std::make_unique<PhysicsSolver>();
-		std::unique_ptr<ForceRegistry> force_registry = std::make_unique<ForceRegistry>();
-		std::unique_ptr<CollisionRegistry> collision_resgisty = std::make_unique<CollisionRegistry>();
-		std::unique_ptr<CollisionDetector> collision_detector = std::make_unique<CollisionDetector>();
+		MouseInput::DisableMouse();
+		MouseInput::EnableRawInput();
 
 		GameState game_state;// @TODO: Unique ptr
 		game_state.asset_table = asset_table.get();
-
 		asset_loader->LoadEntireFolderOfModels("../res/meshes");
-
-		//for (MeshEntry mesh_entry = 0; mesh_entry < asset_table->mesh_raw_data.size(); mesh_entry++)
-		//{
-		//	asset_table->mesh_intances.at(mesh_entry) = renderer->CreateMesh(asset_table->mesh_raw_data.at(mesh_entry));
-		//}
 
 		std::unique_ptr<World> world = std::make_unique<World>();
 		//std::unique_ptr<WorldRenderer> world_renderer = std::make_unique<WorldRenderer>();
 
 		game_state.SetActiveWorld(world.get());
-
-		MouseInput::DisableMouse();
-		MouseInput::EnableRawInput();
 
 		renderer->shader = renderer->CreatePipline("t.vert.cso", "t.pixl.cso");
 		debug_renderer->pipeline = renderer->CreatePipline("debug_line.vert.cso", "debug_line.pixl.cso");
@@ -72,15 +67,9 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		renderer->SetTexture(t);
 
 		bool in_editor = false;
-
 		editor->Start();
 
 		world->CreatePlayer();
-
-		//while (!asset_table->GetRawMesh(GameState::GetAssetTable()->FindMeshEntry("TL_Proto_ConcaveGrid")).IsValid())
-		{
-
-		}
 
 		Environment *c1 = world->CreateEntity<Environment>();
 		c1->name = "c1";
@@ -106,19 +95,6 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		ground->SetMesh(GameState::GetAssetTable()->FindMeshEntry("CM_Bld_Floor5x5"));
 		ground->SetCollider(asset_table->GetRawMesh(ground->GetMesh()).GetMeshCollider());
 
-		PhysicsEntity *ri = world->CreateEntity<PhysicsEntity>();
-		ri->name = "ri";
-		ri->transform.position = Vec3f(1.0f, 2.0f, 0.0f);
-		ri->transform.scale = Vec3f(1.0f);
-		ri->SetMesh(GameState::GetAssetTable()->FindMeshEntry("cube"));
-		ri->SetCollider(CreateAABBFromCenterRadius(0, 1));
-		ri->SetCollider(CreateOBB(0, 1));
-		ri->should_draw = true;
-		ri->SetMass(10.0f);
-		ri->damping = 0.95f;
-		//ri->torque = Vec3f(100, 100, 100);
-		//ri->AddForceAtPoint(Vec3f(0, 0, -100), Vec3f(1, 0, -1));
-		ri->physics_type = PhysicsEntityType::RIGIDBODY;
 
 		//NavAgent *nav_agent = world->CreateEntity<NavAgent>();
 		//nav_agent->nav_mesh = &nav_mesh;
@@ -140,6 +116,10 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		Speaker game_music;
 		//game_music.PlaySound("footstepssounds/Footsteps_Casual_Metal_04.wav");
 
+		ParticleEmitter *emitter = world->CreateEntity<ParticleEmitter>();
+
+		Sphere s2 = CreateSphere(Vec3f(0, 1, 0), 0.1f);
+		Plane p1 = CreatePlane(Vec3f(0), Vec3f(0, 1, 0));
 
 		Clock clock;
 		clock.Start();
@@ -167,6 +147,32 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 			}
 
 
+			Debug::Push(s2);
+
+			if (KeyInput::GetKeyJustDown(KeyCode::F6) || KeyInput::GetKeyHeldDown(KeyCode::F7))
+			{
+				//SweepInfo info;
+				//Vec3f v1 = Vec3f(0, -1, 0);
+				//Vec3f v2 = Vec3f(0, 0, 0);
+				//if (SweepSphere(s1, v1, s2, v2, &info))
+				//{
+				//	s1 = TranslateSphere(s1, v1 * info.t);
+				//	s2 = TranslateSphere(s2, v2 * info.t);
+				//	LOG(info.t);
+				//	LOGTS(info.normal);
+				//}
+				//else
+				//{
+				//	//s1 = TranslateSphere(s1, v1);
+				//	s2 = TranslateSphere(s2, v2);
+				//}
+				//if (SweepPlane(s1, v1, p1, &info))
+				//{
+				//	s1 = TranslateSphere(s1, v1 * info.t);
+				//	LOG(info.t);
+				//	LOGTS(info.normal);
+				//}
+			}
 
 			//std::cout << real_clock.Get().delta_milliseconds << std::endl;
 

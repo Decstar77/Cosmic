@@ -1,9 +1,9 @@
 #pragma once
 #include "src/Cosmic.h"
 #include "src/math/CosmicMath.h"
-#include "src/util/RetainLock.h"
 #include "src/rendering/Renderer.h"
 #include "src/serialization/FileParsers.h"
+#include "src/core/JobSystem.h"
 
 namespace cm
 {
@@ -65,6 +65,23 @@ namespace cm
 		MeshMetaData GetMeshMetaData(const MeshEntry &entry);
 	};
 
+
+	class ModelLoadJob : public JobWork
+	{
+	public:
+		virtual void Process() override;
+
+	public:
+		ModelLoadJob(const FileResult &file_result, const MeshEntry &mesh_entry, AssetTable *asset_table);
+		~ModelLoadJob();
+
+	private:
+		AssetTable *asset_table;
+		FileResult mesh_file;
+		MeshEntry mesh_entry;
+
+	};
+
 	class AssetLoader
 	{
 	public:
@@ -82,6 +99,7 @@ namespace cm
 		AssetTable *asset_table;
 
 		std::thread worker;
+		std::list<ModelLoadJob> model_jobs;
 		//std::queue<String> load_queue;
 
 		inline static AssetLoader *instance = nullptr;

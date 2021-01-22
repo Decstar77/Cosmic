@@ -1098,4 +1098,32 @@ namespace cm
 	// 	Collider colliders[10];
 	// };
 
+	// @TODO: Pack this
+	struct SweepInfo
+	{
+		real32 t;
+		Vec3f normal;
+	};
+
+
+	// @NOTE: Return true if r1 and r2 are real
+	inline bool QuadraticFormula(const real32 a, const real32 b, const real32 c, real32* r1, real32* r2)
+	{
+		real32 q = b * b - 4.0f * a*c;
+		if (q >= 0)
+		{
+			real32 sq = Sqrt(q);
+			real32 d = 1.0f / (2.0f * a);
+			*r1 = (-b + sq) * d;
+			*r2 = (-b - sq) * d;
+			return true;
+		}
+
+		return false;
+	}
+
+	bool SweepSphere(const Sphere &s1, const Vec3f &v1, const Sphere &s2, const Vec3f &v2, SweepInfo *info);
+
+	bool SweepPlane(const Sphere &sphere, const Vec3f &sphere_velo, const Plane &plane, SweepInfo *info);
+
 }; // namespace cm

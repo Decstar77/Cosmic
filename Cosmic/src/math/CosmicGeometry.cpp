@@ -1116,8 +1116,6 @@ namespace cm
 		return false;
 	}
 
-
-
 	bool CheckIntersection(const AABB &aabb, const Sphere &sphere, IntersectionInfo *info)
 	{
 		real32 sr = GetSphereRadius(sphere);
@@ -1205,5 +1203,93 @@ namespace cm
 		ASSERT(0, "Needs doin");
 		return false;
 	}
+
+
+	bool SweepSphere(const Sphere &s1, const Vec3f &v1, const Sphere &s2, const Vec3f &v2, SweepInfo *info)
+	{
+#if 0
+		Sphere big = s2;
+		big.data.w += s1.data.w;
+
+		Vec3f rel = v1 - v2;
+		real32 mag = Mag(rel);
+		Vec3f dir = rel / mag;
+
+		Ray ray = CreateRay(GetSphereCenter(s1), dir);
+
+		bool result = false;
+
+		real32 t;
+		if (RaycastSphere(ray, big, &t))
+		{
+			if (t <= mag)
+			{
+				Vec3f point = TravelDownRay(ray, t);
+
+				info->t = t / mag;
+				info->normal = Normalize(point - GetSphereCenter(big));
+
+				result = true;
+			}
+		}
+
+		return result;
+#else
+		// @HELP: https://www.gamasutra.com/view/feature/3383/simple_intersection_tests_for_games.php?print=1
+		Vec3f p1 = GetSphereCenter(s1);
+		Vec3f p2 = GetSphereCenter(s2);
+
+		Vec3f dba = p2 - p1;
+		Vec3f vba = v2 - v1;
+
+		real32 a = Dot(vba, vba);
+		real32 b = 2.0f * Dot(vba, dba);
+		real32 c = Dot(dba, dba) - ((s1.data.w + s2.data.w) * (s1.data.w + s2.data.w));
+
+		real32 r1;
+		real32 r2;
+		if (QuadraticFormula(a, b, c, &r1, &r2))
+		{
+			real32 t = Min(r1, r2);
+			if (t >= 0.0f && t <= 1.0f)
+			{
+				info->t = t;
+
+				p1 = p1 + v1 * t;
+				p2 = p2 + v2 * t;
+
+				info->normal = Normalize(p1 - p2);
+
+				return true;
+			}
+		}
+
+		return false;
+#endif
+	}
+
+	bool SweepPlane(const Sphere &sphere, const Vec3f &sphere_velo, const Plane &plane, SweepInfo *info)
+	{
+		// @HELP: https://www.gamasutra.com/view/feature/3383/simple_intersection_tests_for_games.php?print=1
+
+		Vec3f c0 = GetSphereCenter(sphere);
+		Vec3f c1 = GetSphereCenter(TranslateSphere(sphere, sphere_velo));
+
+		real32 r = sphere.data.w;
+		real32 d0 = Dot((c0 - plane.center), plane.normal);
+		real32 d1 = Dot((c1 - plane.center), plane.normal);
+
+		if (d0 >= r && d1 <= r)
+		{
+			info->t = (d0 - r) / (d0 - d1);
+			info->normal = plane.normal;
+
+			return true;
+		}
+
+		return false;
+	}
+
+
 
 } // namespace cm

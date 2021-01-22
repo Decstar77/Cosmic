@@ -1311,13 +1311,7 @@ namespace cm
 	}
 
 	template <typename T>
-	Quat<T> Rotate(const Quat<T> &a, const Quat<T> &b)
-	{
-		return a * b;
-	}
-
-	template <typename T>
-	Vec3<T> Rotate(const Quat<T> &r, const Vec3<T> &point)
+	Vec3<T> RotatePoint(const Quat<T> &r, const Vec3<T> &point)
 	{
 		//@Help: https://gamedev.stackexchange.com/questions/28395/rotating-vector3-by-a-quaternion
 		Quat<T> rc = Conjugate(Normalize(r));
@@ -1328,7 +1322,7 @@ namespace cm
 	}
 
 	template <typename T>
-	Vec3<T> Rotate(const T &d_angle, const Vec3<T> &point, const Vec3<T> &axis)
+	Vec3<T> RotatePointAboutAxis(const T &d_angle, const Vec3<T> &point, const Vec3<T> &axis)
 	{
 		Vec3<T> ax = Normalize(axis);
 
@@ -1370,7 +1364,7 @@ namespace cm
 	}
 
 	template <typename T>
-	Quat<T> Rotate(const Vec3<T> &from, const Vec3<T> &to)
+	Quat<T> RotateTo(const Vec3<T> &from, const Vec3<T> &to)
 	{
 		ASSERT(0, "Untested math"); // @REASON: Untested!
 		// @HELP: https://bitbucket.org/sinbad/ogre/src/9db75e3ba05c/OgreMain/include/OgreVector3.h#cl-651

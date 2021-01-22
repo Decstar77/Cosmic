@@ -57,8 +57,6 @@ namespace cm
 {
 #if 1
 
-
-
 	class Window : public Platform
 	{
 	public:
