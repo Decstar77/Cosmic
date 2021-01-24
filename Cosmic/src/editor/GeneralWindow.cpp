@@ -1,4 +1,7 @@
 #include "GeneralWindow.h"
+
+#include "src/generated/IntrospectedEntity.h"
+
 namespace cm
 {
 	struct ComboListInfo
@@ -174,22 +177,7 @@ namespace cm
 				ImGui::TreePop();
 			}
 
-			if (entity->GetType() == EntityType::PLAYER)
-			{
-				if (ImGui::TreeNode("Player properties"))
-				{
-					Player *player = reinterpret_cast<Player *>(entity);
-
-					ImGui::DragFloat("Max slope angle", &player->max_slope_angle, 1.0f, 25.0f, 60.0f);
-					ImGui::InputFloat("Walk speed", &player->walk_speed);
-					ImGui::InputFloat("Run speed", &player->run_speed);
-					ImGui::InputFloat("Resistance", &player->resistance);
-					ImGui::InputFloat("Jump power", &player->jump_power);
-					ImGui::InputFloat("Gravity", &player->gravity_amount);
-					ImGui::InputFloat("Look speed", &player->look_speed);
-					ImGui::TreePop();
-				}
-			}
+			IntrospectedEntityGUI(entity);
 
 			if (entity->behaviour == EntityBehaviour::PHYSICS_ENTITY)
 			{

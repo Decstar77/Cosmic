@@ -1637,8 +1637,6 @@ namespace cm
 
 		XMLElement* root = tree->GetRoot();
 
-		CreatePlayer();
-
 		std::list<XMLElement> entities = root->GetChildren();
 
 		for (XMLElement &entity : entities)
@@ -1819,20 +1817,12 @@ namespace cm
 
 	void World::UpdateEntities(const real32 &dt)
 	{
-		player->camera->SetAsActiveCamera();
 		std::vector<Entity *> valid_entities = CreateCollection();
 
 		for (Entity *entity : valid_entities)
 		{
 			entity->Update(dt);
 		}
-	}
-
-	cm::Player * World::CreatePlayer()
-	{
-		this->player = CreateEntity<Player>();
-
-		return player;
 	}
 
 	std::vector<Entity *> World::CreateCollection(bool(*comparator)(Entity *entity) /*= nullptr*/)

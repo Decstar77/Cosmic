@@ -3,7 +3,7 @@
 
 namespace cm
 {
-	class Turret : public Entity
+	class Turret : public Entity // @Display
 	{
 	public:
 		virtual void Start() override;

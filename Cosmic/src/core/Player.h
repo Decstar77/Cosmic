@@ -7,7 +7,7 @@
 
 namespace cm
 {
-	class Player : public Entity
+	class FirstPersonPlayer : public Entity
 	{
 	public:
 		Camera *camera;

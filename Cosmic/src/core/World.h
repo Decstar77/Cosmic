@@ -453,7 +453,7 @@ namespace cm
 		std::array<std::unique_ptr<Entity>, 1000> entities;
 		std::queue<int32> freelist;
 
-		Player *player;
+
 
 	public:
 		template<typename T, typename... Args>
@@ -492,7 +492,6 @@ namespace cm
 		void UpdatePhysicsEntities(const real32 &dt, PhysicsSolver *solver);
 		void UpdateEntities(const real32 &dt);
 
-		Player * CreatePlayer();
 		std::vector<Entity *> CreateCollection(bool(*comparator)(Entity *entity) = nullptr);
 
 	public:

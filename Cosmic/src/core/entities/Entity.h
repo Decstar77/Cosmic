@@ -24,9 +24,11 @@ namespace cm
 			PARTICEL_EMITTER,
 			ENVIRONMENT,
 			CAMERA,
+			POINTLIGHT,
 			PLAYER,
 			ENEMY_DUDE,
 			TURRET,
+			DRONE,
 			COUNT
 	};
 
@@ -100,6 +102,7 @@ namespace cm
 
 		inline void SetPosition(const Vec3f &position) { this->transform.position = position; }
 		inline Vec3f GetPosition() const { return transform.position; }
+		Vec3f GetGlobalPosition() const;
 
 		inline void SetOrientation(const Quatf &orientation) { this->transform.orientation = orientation; }
 		inline Quatf GetOrientation() const { return this->transform.orientation; }

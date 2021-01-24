@@ -3,7 +3,6 @@
 
 namespace cm
 {
-
 	Turret::Turret()
 	{
 		type = EntityType::TURRET;
@@ -19,12 +18,9 @@ namespace cm
 		SetMesh(GameState::GetAssetTable()->FindMeshEntry("SM_Prop_Drone_Insect_01"));
 	}
 
-
 	void Turret::Update(const real32 &dt)
 	{
-		Vec3f ppos = world->player->transform.position;
 
-		transform.LookAtLH(ppos);
 	}
 
 }

@@ -5,13 +5,13 @@
 
 namespace cm
 {
-	void Player::Update(const real32 &dt)
+	void FirstPersonPlayer::Update(const real32 &dt)
 	{
 		PlayerLook(dt);
 		PlayerMove(dt);
 	}
 
-	void Player::Start()
+	void FirstPersonPlayer::Start()
 	{
 		this->type = EntityType::PLAYER;
 		this->name = "Player";
@@ -52,7 +52,7 @@ namespace cm
 		weapon->SetParent(camera);
 	}
 
-	void Player::PlayerLook(const real32 &dt)
+	void FirstPersonPlayer::PlayerLook(const real32 &dt)
 	{
 		Vec2f delta = MouseInput::GetMouseDelta();
 
@@ -85,7 +85,7 @@ namespace cm
 
 	}
 
-	void Player::PlayerMove(const real32 &dt)
+	void FirstPersonPlayer::PlayerMove(const real32 &dt)
 	{
 		Basisf basis = camera->transform.GetBasis();
 
@@ -377,12 +377,12 @@ namespace cm
 		//std::cout << clock.Get().delta_milliseconds << std::endl;
 	}
 
-	Vec3f Player::SweepForward(const Vec3f &pos, const Vec3f &velo, real32 t)
+	Vec3f FirstPersonPlayer::SweepForward(const Vec3f &pos, const Vec3f &velo, real32 t)
 	{
 		return pos + velo * t;
 	}
 
-	Vec2f Player::QuadracticSolve(const real32 &a, const real32 &b, const real32 &c)
+	Vec2f FirstPersonPlayer::QuadracticSolve(const real32 &a, const real32 &b, const real32 &c)
 	{
 		Vec2f result(2.0f, 2.0f);
 

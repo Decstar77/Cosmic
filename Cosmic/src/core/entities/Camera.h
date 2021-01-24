@@ -13,7 +13,7 @@ namespace cm
 	extern inline String ToString(const CameraType &entry);
 	extern inline CameraType StringToCameraType(const String &entry);
 
-	class Camera : public Entity
+	class Camera : public Entity // @Display
 	{
 	public:
 		CameraType camera_type;
@@ -22,10 +22,10 @@ namespace cm
 		{
 			struct
 			{
-				real32 dfovy;
-				real32 aspect;
-				real32 znear;
-				real32 zfar;
+				real32 dfovy;	// @Display
+				real32 aspect;	// @Display
+				real32 znear;	// @Display
+				real32 zfar;	// @Display
 			};
 			struct
 			{
@@ -44,6 +44,7 @@ namespace cm
 		Mat4f CalculateViewMatrix() const;
 		Mat4f CalculateProjectionMatrix() const;
 
+		Frustrum GetFrustrum() const;
 		Ray ShootRay(const Vec2f &mouse_position, const Vec2f &window_dimenions);
 
 		inline static Camera *GetActiveCamera() { return active_camera; }

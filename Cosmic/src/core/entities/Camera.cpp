@@ -34,6 +34,11 @@ namespace cm
 		return projection_matrix;
 	}
 
+	cm::Frustrum Camera::GetFrustrum() const
+	{
+		return CreateFrustrum(CalculateProjectionMatrix(), CalculateViewMatrix());
+	}
+
 	cm::Ray Camera::ShootRay(const Vec2f &mouse_position, const Vec2f &window_dimenions)
 	{
 		Mat4f proj = CalculateProjectionMatrix();
@@ -47,7 +52,7 @@ namespace cm
 		Vec3f world_coords = ToWorldCoords(view, view_coords);
 
 		Ray ray;
-		ray.origin = transform.position;
+		ray.origin = GetGlobalPosition();
 		ray.direction = Normalize(Vec3f(world_coords.x, world_coords.y, world_coords.z));
 
 		return ray;

@@ -9,13 +9,14 @@
 #include "rendering/DirectX11Renderer.h"
 #include "src/editor/Editor.h"
 #include "Debug.h"
-#include "src/core/IntrospectedEnums.h"
-#include "src/core/NavMesh.h"
+#include "src/generated/IntrospectedEnums.h"
 #include "src/core/Particles.h"
 #include "src/core/entities/Camera.h"
 #include "src/core/entities/Environment.h"
 #include "src/core/entities/Turret.h"
-#include "src/core/entities/EnemyGrunt.h"
+#include "src/core/entities/GameCamera.h"
+#include "src/core/entities/Light.h"
+#include "src/core/entities/Drone.h"
 #include "src/core/Physics.h"
 #include "src/core/SoundSystem.h"
 #include "src/core/JobSystem.h"
@@ -45,7 +46,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 
 		std::unique_ptr<SoundSystem> sound_system = std::make_unique<SoundSystem>(); // @TODO: Remove singloton
 
-		MouseInput::DisableMouse();
+		//MouseInput::DisableMouse();
 		MouseInput::EnableRawInput();
 
 		GameState game_state;// @TODO: Unique ptr
@@ -69,24 +70,6 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		bool in_editor = false;
 		editor->Start();
 
-		world->CreatePlayer();
-
-		Environment *c1 = world->CreateEntity<Environment>();
-		c1->name = "c1";
-		c1->transform.position = Vec3f(0.0f, 0.0f, 5.0f);
-		c1->transform.scale = Vec3f(1.0f);
-		c1->transform.orientation = EulerToQuat(Vec3f(-0, 0, 0));
-		c1->SetMesh(GameState::GetAssetTable()->FindMeshEntry("COL_Ramp"));
-		c1->SetCollider(asset_table->GetRawMesh(c1->GetMesh()).GetMeshCollider());
-
-		Environment *c2 = world->CreateEntity<Environment>();
-		c2->name = "c2";
-		c2->transform.position = Vec3f(-4.0f, 0.0f, 5.0f);
-		c2->transform.scale = Vec3f(1.0f);
-		c2->transform.orientation = EulerToQuat(Vec3f(-0, 0, 0));
-		c2->SetMesh(GameState::GetAssetTable()->FindMeshEntry("COL_Ramp"));
-		c2->SetCollider(asset_table->GetRawMesh(c1->GetMesh()).GetMeshCollider());
-
 		Environment *ground = world->CreateEntity<Environment>();
 		ground->name = "ground";
 		ground->transform.position = Vec3f(0.0f, 0.0f, 0.0f);
@@ -95,31 +78,10 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		ground->SetMesh(GameState::GetAssetTable()->FindMeshEntry("CM_Bld_Floor5x5"));
 		ground->SetCollider(asset_table->GetRawMesh(ground->GetMesh()).GetMeshCollider());
 
+		GameCamera *game_cam = world->CreateEntity<GameCamera>();
+		Drone *drone = world->CreateEntity<Drone>();
 
-		//NavAgent *nav_agent = world->CreateEntity<NavAgent>();
-		//nav_agent->nav_mesh = &nav_mesh;
-		//nav_agent->transform.position = Vec3f(10, 0, -10);
-
-		//engine->play2D("F:/Telescope/Cosmic/res/sounds/ophelia.mp3", false);
-
-
-		NavMesh nav_mesh;
-		nav_mesh.CreateNavMesh(ground->GetGlobalCollider().mesh);
-		EnemyGrunt *grunt = world->CreateEntity<EnemyGrunt>();
-		grunt->transform.position = Vec3f(3, 0, 3);
-		grunt->LookAt(0);
-		grunt->nav_agent.nav_mesh = &nav_mesh;
-
-		Turret *turret = world->CreateEntity<Turret>();
-		turret->SetName("Turret boii");
-
-		Speaker game_music;
-		//game_music.PlaySound("footstepssounds/Footsteps_Casual_Metal_04.wav");
-
-		ParticleEmitter *emitter = world->CreateEntity<ParticleEmitter>();
-
-		Sphere s2 = CreateSphere(Vec3f(0, 1, 0), 0.1f);
-		Plane p1 = CreatePlane(Vec3f(0), Vec3f(0, 1, 0));
+		world->CreateEntity<PointLight>();
 
 		Clock clock;
 		clock.Start();
@@ -147,7 +109,6 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 			}
 
 
-			Debug::Push(s2);
 
 			if (KeyInput::GetKeyJustDown(KeyCode::F6) || KeyInput::GetKeyHeldDown(KeyCode::F7))
 			{
@@ -178,7 +139,6 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 
 			if (!in_editor)
 			{
-				MouseInput::DisableMouse();
 				world->UpdateEntities(dt);
 
 			}

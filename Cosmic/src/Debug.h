@@ -1,6 +1,6 @@
 #pragma once
 #include "Cosmic.h"
-#include "src/core/NavMesh.h"
+#include "src/core/entities/components/NavMesh.h"
 #include "src/rendering/DirectX11Renderer.h"
 namespace cm
 {
@@ -114,6 +114,15 @@ namespace cm
 				renderer->PushNewLine(triangle.v1, triangle.v2);
 				renderer->PushNewLine(triangle.v2, triangle.v0);
 			}
+		}
+
+		static void Push(const Basisf &basis, const Vec3f &position)
+		{
+			ASSERT(renderer, "Debug renderer does not exist");
+
+			renderer->PushNewLine(position, position + basis.right);
+			renderer->PushNewLine(position, position + basis.upward);
+			renderer->PushNewLine(position, position + basis.forward);
 		}
 
 		static void Push(const Sphere &sphere)

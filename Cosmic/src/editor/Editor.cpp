@@ -83,11 +83,13 @@ namespace cm
 
 		if (context.draw_player_collider)
 		{
-			Capsule collider = world->player->collider;
-			collider.bot += world->player->GetPosition();
-			collider.top += world->player->GetPosition();
-			Debug::Push(collider);
+			//Capsule collider = world->player->collider;
+			//collider.bot += world->player->GetPosition();
+			//collider.top += world->player->GetPosition();
+			//Debug::Push(collider);
 		}
+
+		Debug::Push(Camera::GetMainCamera()->GetFrustrum());
 
 		if (context.draw_entity_colliders)
 		{
@@ -99,7 +101,6 @@ namespace cm
 			{
 				Debug::Push(reinterpret_cast<Environment*>(entity)->GetGlobalCollider());
 			}
-
 		}
 
 		if (context.draw_bounding_boxes)

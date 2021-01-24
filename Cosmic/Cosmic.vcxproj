@@ -115,18 +115,20 @@
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="src\core\entities\GameCamera.h" />
+    <ClInclude Include="src\core\entities\Light.h" />
     <ClInclude Include="src\core\Particles.h" />
     <ClInclude Include="src\core\JobSystem.h" />
+    <ClInclude Include="src\generated\IntrospectedEntity.h" />
     <ClInclude Include="src\util\BlockingQueue.h" />
     <ClInclude Include="src\core\SoundSystem.h" />
-    <ClInclude Include="src\core\NavMesh.h" />
-    <ClInclude Include="src\core\entities\EnemyGrunt.h" />
+    <ClInclude Include="src\core\entities\components\NavMesh.h" />
     <ClInclude Include="src\core\entities\Environment.h" />
     <ClInclude Include="src\core\entities\Camera.h" />
     <ClInclude Include="src\util\RetainLock.h" />
     <ClInclude Include="src\core\Physics.h" />
     <ClInclude Include="src\serialization\Assets.h" />
-    <ClInclude Include="src\core\IntrospectedEnums.h" />
+    <ClInclude Include="src\generated\IntrospectedEnums.h" />
     <ClInclude Include="src\core\Player.h" />
     <ClInclude Include="src\core\entities\Entity.h" />
     <ClInclude Include="src\core\Clock.h" />
@@ -146,6 +148,7 @@
     <ClInclude Include="src\platforms\Win32Platform.h" />
     <ClInclude Include="src\serialization\FileParsers.h" />
     <ClInclude Include="src\core\entities\Turret.h" />
+    <ClInclude Include="src\core\entities\Drone.h" />
     <ClInclude Include="vendor\imgui\imconfig.h" />
     <ClInclude Include="vendor\imgui\imgui.h" />
     <ClInclude Include="vendor\imgui\ImGuizmo.h" />
@@ -159,12 +162,12 @@
     <ClInclude Include="src\core\World.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\core\entities\GameCamera.cpp" />
     <ClCompile Include="src\core\Particles.cpp" />
     <ClCompile Include="src\core\JobSystem.cpp" />
     <ClCompile Include="src\util\BlockingQueue.cpp" />
     <ClCompile Include="src\core\SoundSystem.cpp" />
-    <ClCompile Include="src\core\NavMesh.cpp" />
-    <ClCompile Include="src\core\entities\EnemyGrunt.cpp" />
+    <ClCompile Include="src\core\entities\components\NavMesh.cpp" />
     <ClCompile Include="src\core\entities\Environment.cpp" />
     <ClCompile Include="src\core\entities\Camera.cpp" />
     <ClCompile Include="src\util\RetainLock.cpp" />
@@ -183,6 +186,7 @@
     <ClCompile Include="src\serialization\Assets.cpp" />
     <ClCompile Include="src\serialization\FileParsers.cpp" />
     <ClCompile Include="src\core\entities\Turret.cpp" />
+    <ClCompile Include="src\core\entities\Drone.cpp" />
     <ClCompile Include="vendor\imgui\imgui.cpp" />
     <ClCompile Include="vendor\imgui\ImGuizmo.cpp" />
     <ClCompile Include="vendor\imgui\imgui_demo.cpp" />

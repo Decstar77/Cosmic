@@ -1884,7 +1884,7 @@ namespace cm
 
 		Mat3<T> result(iPrime, jPrime, kPrime);
 
-		return result * a;
+		return a * result;
 	}
 
 	template <typename T>
@@ -2291,7 +2291,7 @@ namespace cm
 
 		Mat4<T> result(iPrime, jPrime, kPrime, wPrime);
 
-		result = result * a;
+		result = a * result;
 
 		return result;
 	}

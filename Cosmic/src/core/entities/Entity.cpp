@@ -154,6 +154,13 @@ namespace cm
 		return children;
 	}
 
+	cm::Vec3f Entity::GetGlobalPosition() const
+	{
+		Mat4f m = GetGlobalTransformMatrix();
+
+		return Vec3f(m.row3);
+	}
+
 	cm::Transform Entity::GetGlobalTransform() const
 	{
 		Mat4f m = GetGlobalTransformMatrix();
