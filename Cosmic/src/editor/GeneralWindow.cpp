@@ -233,6 +233,7 @@ namespace cm
 				ImGui::EndPopup();
 			}
 
+			ImGui::Checkbox("Grid Mode", &context->grid_mode);
 
 			ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(3.0f / 7.0f, 0.6f, 0.6f));
 			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(3.0f / 7.0f, 0.7f, 0.7f));
@@ -854,6 +855,115 @@ namespace cm
 	EditorCamera::~EditorCamera()
 	{
 
+	}
+
+	bool GridMode::GetResult(EditorContext *context, GameState *game_state)
+	{
+		if (context->grid_mode)
+		{
+			Grid &grid = game_state->GetActiveWorld()->grid;
+
+			Ray ray = Camera::GetActiveCamera()->ShootRay(MouseInput::GetCurrentPosition(),
+				Vec2f((real32)Platform::GetClientWidth(), (real32)Platform::GetClientHeight()));
+
+			real32 min_dist = 100000.0f;
+			GridCell *selected_cell = nullptr;
+
+			for (GridCell &cell : grid.cells)
+			{
+				if (!cell.empty)
+				{
+					AABB aabb = CreateAABBFromCenterRadius(cell.center,
+						Vec3f(grid.grid_cell_half_width, grid.grid_cell_half_height, grid.grid_cell_half_depth));
+
+					real32 t;
+					if (RaycastAABB(ray, aabb, &t))
+					{
+						if (t < min_dist)
+						{
+							selected_cell = &cell;
+							min_dist = t;
+						}
+					}
+				}
+			}
+
+			if (selected_cell)
+			{
+				if (KeyInput::GetKeyHeldDown(KeyCode::LEFT_SHIFT))
+				{
+					AABB aabb = CreateAABBFromCenterRadius(selected_cell->center,
+						Vec3f(grid.grid_cell_half_width, grid.grid_cell_half_height, grid.grid_cell_half_depth));
+
+					Debug::Push(aabb);
+
+					if (MouseInput::GetMouseJustDown(MouseCode::LEFT_MOUSE_BUTTON))
+					{
+						selected_cell->empty = true;
+						return true;
+					}
+				}
+				else
+				{
+					std::vector<GridCell> neighbours = grid.GetNeighbours(*selected_cell);
+
+					min_dist = 1000000.0f;
+					selected_cell = nullptr;
+
+					for (GridCell &cell : neighbours)
+					{
+						if (cell.empty)
+						{
+							AABB aabb = CreateAABBFromCenterRadius(cell.center,
+								Vec3f(grid.grid_cell_half_width, grid.grid_cell_half_height, grid.grid_cell_half_depth));
+
+							real32 t;
+							if (RaycastAABB(ray, aabb, &t))
+							{
+								if (t < min_dist)
+								{
+									selected_cell = &cell;
+									min_dist = t;
+								}
+							}
+						}
+					}
+
+					if (selected_cell)
+					{
+						AABB aabb = CreateAABBFromCenterRadius(selected_cell->center,
+							Vec3f(grid.grid_cell_half_width, grid.grid_cell_half_height, grid.grid_cell_half_depth));
+
+						Debug::Push(aabb);
+
+						if (MouseInput::GetMouseJustDown(MouseCode::LEFT_MOUSE_BUTTON))
+						{
+							int32 index = grid.GetIndex(selected_cell->xindex, selected_cell->yindex, selected_cell->zindex);
+							grid.cells.at(index).empty = false;
+
+							return true;
+						}
+					}
+				}
+			}
+		}
+
+		return false;
+	}
+
+	bool CameraFreeMode::GetResult(EditorContext *context, GameState *game_state)
+	{
+		context->camera.camera->SetAsActiveCamera();
+
+		MouseInput::EnableMouse();
+		if (MouseInput::GetMouseHeldDown(MouseCode::RIGHT_MOUSE_BUTTON))
+		{
+			MouseInput::DisableMouse();
+			context->camera.Update();
+			return true;
+		}
+
+		return false;
 	}
 
 }

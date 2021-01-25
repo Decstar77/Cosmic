@@ -22,17 +22,24 @@ namespace cm
 		auto console_window = std::make_shared<ConsoleWindow>();
 		auto add_window = std::make_shared<AddWindow>();
 		auto gizmos = std::make_shared<WorldGizmo>();
+		auto grid_mode = std::make_shared<GridMode>();
+		auto camera_mode = std::make_shared<CameraFreeMode>();
+
 		// 
 		editor_windows.push_back((EditorWindow *)general_window.get());
 		editor_windows.push_back((EditorWindow *)world_window.get());
 		editor_windows.push_back((EditorWindow *)console_window.get());
 		editor_windows.push_back((EditorWindow *)add_window.get());
 		editor_windows.push_back((EditorWindow *)gizmos.get());
+
 		// 
 		editor_chain.push_back(general_window);
 		editor_chain.push_back(world_window);
 		editor_chain.push_back(console_window);
 		editor_chain.push_back(add_window);
+
+		editor_chain.push_back(camera_mode);
+		editor_chain.push_back(grid_mode);
 		editor_chain.push_back(gizmos);
 		editor_chain.push_back(std::make_shared<WorldPicker>());
 	}
@@ -72,13 +79,7 @@ namespace cm
 
 		if (world_operations)
 		{
-			context.camera.camera->SetAsActiveCamera();
-			MouseInput::EnableMouse();
-			if (MouseInput::GetMouseHeldDown(MouseCode::RIGHT_MOUSE_BUTTON))
-			{
-				MouseInput::DisableMouse();
-				context.camera.Update();
-			}
+
 		}
 
 		if (context.draw_player_collider)
@@ -145,8 +146,8 @@ namespace cm
 		colors[ImGuiCol_TitleBgActive] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
 		colors[ImGuiCol_Header] = ImVec4(1.00f, 1.00f, 1.00f, 0.31f);
 
-		ImGui_ImplWin32_Init(DirectXState::window);
-		ImGui_ImplDX11_Init(DirectXState::device, DirectXState::context);
+		ImGui_ImplWin32_Init(GraphicsContext::window);
+		ImGui_ImplDX11_Init(GraphicsContext::device, GraphicsContext::context);
 	}
 
 	void Editor::BeginFrame()

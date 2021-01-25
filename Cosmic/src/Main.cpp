@@ -10,7 +10,8 @@
 #include "src/editor/Editor.h"
 #include "Debug.h"
 #include "src/generated/IntrospectedEnums.h"
-#include "src/core/Particles.h"
+#include "src/core/Grid.h"
+#include "src/core/entities/Particles.h"
 #include "src/core/entities/Camera.h"
 #include "src/core/entities/Environment.h"
 #include "src/core/entities/Turret.h"
@@ -31,7 +32,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 
 	if (window->IsOpen())
 	{
-		DirectXState::InitializeDirectX(window->GetHandle());
+		GraphicsContext::InitializeDirectX(window->GetHandle());
 		std::unique_ptr<DirectXImmediateRenderer> renderer = std::make_unique<DirectXImmediateRenderer>(window->GetHandle());
 
 		// @TODO: Debug removal
@@ -83,6 +84,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 
 		world->CreateEntity<PointLight>();
 
+
 		Clock clock;
 		clock.Start();
 		real32 dt = 0.016f;
@@ -107,8 +109,6 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 			{
 				in_editor = !in_editor;
 			}
-
-
 
 			if (KeyInput::GetKeyJustDown(KeyCode::F6) || KeyInput::GetKeyHeldDown(KeyCode::F7))
 			{
@@ -160,6 +160,11 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 				return entity->active && entity->should_draw && entity->GetMesh() != INVALID_MESH_ENTRY;
 			});
 
+			for (GridCell &cell : world->grid.cells)
+			{
+				if (!cell.empty)
+					renderer->RenderMesh(asset_table->mesh_intances.at(asset_table->FindMeshEntry("cube")), Transform(cell.center));
+			}
 
 			for (Entity *entity : renderable_entities)
 			{

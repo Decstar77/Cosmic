@@ -91,14 +91,13 @@ namespace cm
 		// };
 	}
 
-	bool DirectXState::InitializeDirectX(HWND window)
+	bool GraphicsContext::InitializeDirectX(HWND window)
 	{
-		DirectXState::window = window;
+		GraphicsContext::window = window;
 
 		D3D_FEATURE_LEVEL feature_level;
 
 		DXGI_SWAP_CHAIN_DESC sd = {};
-
 		sd.BufferDesc.Width = 0;
 		sd.BufferDesc.Height = 0;
 		sd.BufferDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;

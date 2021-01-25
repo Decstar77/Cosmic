@@ -44,6 +44,8 @@ namespace cm
 		bool console_window;
 		bool world_window;
 
+		bool grid_mode;
+
 		EntityReference current_entity;
 		EditorCamera camera;
 	};
@@ -149,6 +151,22 @@ namespace cm
 	};
 
 	class WorldPicker : public EditorChain
+	{
+
+	public:
+		virtual bool GetResult(EditorContext *context, GameState *game_state) override;
+
+	};
+
+	class GridMode : public EditorChain
+	{
+
+	public:
+		virtual bool GetResult(EditorContext *context, GameState *game_state) override;
+
+	};
+
+	class CameraFreeMode : public EditorChain
 	{
 
 	public:

@@ -152,7 +152,7 @@ namespace cm
 		void Stub();
 	};
 
-	class DirectXState
+	class GraphicsContext
 	{
 	public:
 		static bool InitializeDirectX(HWND window);
@@ -168,7 +168,7 @@ namespace cm
 		inline static HWND window;
 	};
 
-	class DirectXDebugRenderer : public DirectXState//, DebugRenderer
+	class DirectXDebugRenderer : public GraphicsContext//, DebugRenderer
 	{
 	public:
 		Pipeline pipeline;
@@ -204,7 +204,7 @@ namespace cm
 		void PushLine(const Vec4f &a, const Vec4f &b);
 	};
 
-	class DirectXImmediateRenderer : public DirectXState
+	class DirectXImmediateRenderer : public GraphicsContext
 	{
 	public:
 		inline static DirectXImmediateRenderer *GetInstance();
@@ -258,17 +258,6 @@ namespace cm
 		void CreateArrays();
 	};
 
-	class MeshBuilder
-	{
-	public:
-		std::vector<real32> vertices;
-		std::vector<uint32> indices;
-		uint32 stride = sizeof(real32) * 3 + sizeof(real32) * 3 + sizeof(uint32) * 2; // @NOTE: Temp
-
-	public:
-		MeshBuilder(const String &path);
-		~MeshBuilder();
-	};
 } // namespace cm
 
 #endif // __DIRECTX11RENDERER_H__
