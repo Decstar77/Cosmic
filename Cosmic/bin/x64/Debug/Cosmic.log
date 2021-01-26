@@ -1,2 +1,10 @@
-﻿  Main.cpp
+﻿  Particles.cpp
+  Grid.cpp
+  Physics.cpp
+  Editor.cpp
+  GeneralWindow.cpp
+  DirectX11Renderer.cpp
+  Main.cpp
+  Drone.cpp
+  World.cpp
   Cosmic.vcxproj -> F:\Telescope\Cosmic\build\x64\Debug\Cosmic.exe

@@ -126,6 +126,7 @@
     <ClInclude Include="src\core\entities\components\NavMesh.h" />
     <ClInclude Include="src\core\entities\Environment.h" />
     <ClInclude Include="src\core\entities\Camera.h" />
+    <ClInclude Include="src\util\MemoryAreana.h" />
     <ClInclude Include="src\util\RetainLock.h" />
     <ClInclude Include="src\core\Physics.h" />
     <ClInclude Include="src\serialization\Assets.h" />

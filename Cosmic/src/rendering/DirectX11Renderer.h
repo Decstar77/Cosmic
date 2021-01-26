@@ -7,6 +7,7 @@
 
 #include "Renderer.h"
 #include "src/serialization/FileParsers.h"
+#include "src/util/MemoryAreana.h"
 
 namespace cm
 {
@@ -112,18 +113,13 @@ namespace cm
 		~Pipeline();
 	};
 
-	class ShaderInstance
-	{
-	public:
-		ShaderInstance(uint32 index) { this->index = index; }
-		inline uint32 GetIndex() { return index; }
 
-	private:
-		uint32 index = UINT32_MAX;
-	};
 
-	class Mesh
+	class DXMesh
 	{
+		friend class GraphicsContext;
+		friend class DirectXImmediateRenderer;
+
 	public:
 		uint32 index = UINT32_MAX;
 		uint32 stride_bytes = UINT32_MAX;
@@ -135,27 +131,22 @@ namespace cm
 	public:
 		inline bool IsValid() { return vertex_buffer && index_buffer; }
 
+		~DXMesh();
+
 	public:
-		Mesh();
-		~Mesh();
+		DXMesh();
 	};
 
-	class RenderPrimitives
-	{
-		Mesh plane;
-		Mesh cube;
-		Mesh sphere;
-		Mesh cyclinder;
-		Mesh capsule;
-
-	private:
-		void Stub();
-	};
 
 	class GraphicsContext
 	{
 	public:
-		static bool InitializeDirectX(HWND window);
+		bool InitializeDirectX(HWND window);
+		void Destroy();
+
+		MeshInstance CreateMesh(const EditableMesh &mesh);
+		ShaderInstance CreateShader(const String &path);
+		TextureInstance CreateTexture(const TextureInstance &texture);
 
 	public:
 		inline static ID3D11Device *device = nullptr;
@@ -166,6 +157,14 @@ namespace cm
 
 		inline static DirectXDebug debugger;
 		inline static HWND window;
+
+	public:
+		GraphicsContext();
+		~GraphicsContext();
+
+	private:
+
+		MemoryAreana<DXMesh> mesh_areana;
 	};
 
 	class DirectXDebugRenderer : public GraphicsContext//, DebugRenderer
@@ -247,7 +246,7 @@ namespace cm
 		Mat4f projection_matrix;
 
 		const uint32 total_mesh_count = 1000;
-		std::vector<Mesh> meshes;
+		std::vector<DXMesh> meshes;
 		std::stack<uint32> mesh_free_list;
 
 		const uint32 total_shader_count = 1000;

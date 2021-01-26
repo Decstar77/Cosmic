@@ -32,7 +32,9 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 
 	if (window->IsOpen())
 	{
-		GraphicsContext::InitializeDirectX(window->GetHandle());
+		std::unique_ptr<GraphicsContext> graphics_context = std::make_unique<GraphicsContext>();
+		graphics_context->InitializeDirectX(window->GetHandle());
+
 		std::unique_ptr<DirectXImmediateRenderer> renderer = std::make_unique<DirectXImmediateRenderer>(window->GetHandle());
 
 		// @TODO: Debug removal
@@ -192,6 +194,8 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 	{
 		Platform::ErrorBox("Could not open window");
 	}
+
+	int a = 2;
 
 }
 #endif

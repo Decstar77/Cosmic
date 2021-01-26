@@ -67,29 +67,15 @@ namespace cm
 	{
 	}
 
-	Mesh::Mesh()
+	DXMesh::DXMesh()
 	{
 	}
 
-	Mesh::~Mesh()
+	DXMesh::~DXMesh()
 	{
 	}
 
-	void RenderPrimitives::Stub()
-	{
-		// Vertex plane_data[] =
-		// {
-		//     {-1.0f, 1.0f},
-		//     {1.0f, 1.0f},
-		//     {1.0f, -1.0f},
-		//     {-1.0f, -1.0f}
-		// };
 
-		// uint16 plane_index[] =
-		// {
-		//     0, 1, 2, 0, 2, 3
-		// };
-	}
 
 	bool GraphicsContext::InitializeDirectX(HWND window)
 	{
@@ -185,6 +171,23 @@ namespace cm
 		context->RSSetState(rs_state);
 
 		return true;
+	}
+
+	void GraphicsContext::Destroy()
+	{
+		DXRELEASE(swapchain);
+		DXRELEASE(device);
+		DXRELEASE(context);
+	}
+
+	GraphicsContext::GraphicsContext()
+	{
+
+	}
+
+	GraphicsContext::~GraphicsContext()
+	{
+
 	}
 
 	void DirectXDebugRenderer::SetMatrices(const Mat4f &view, const Mat4f &proj)
@@ -416,7 +419,7 @@ namespace cm
 		D3D11_SUBRESOURCE_DATA index_res = {};
 		index_res.pSysMem = index_data;
 
-		Mesh mesh;
+		DXMesh mesh;
 		mesh.index_count = index_count;
 		mesh.stride_bytes = vertex_stride_bytes;
 		mesh.vertex_size = vertex_size;
@@ -440,7 +443,6 @@ namespace cm
 		shader.vertex_file = Platform::LoadFile(vertex_dir);
 		shader.pixel_file = Platform::LoadFile(pixel_dir);
 
-		// @NOTE: This will change when we get nrml tcrds etc.
 		D3D11_INPUT_ELEMENT_DESC pos_desc = {};
 		pos_desc.SemanticName = "Position";
 		pos_desc.SemanticIndex = 0;
@@ -571,7 +573,7 @@ namespace cm
 	void DirectXImmediateRenderer::FreeMesh(MeshInstance instance)
 	{
 		uint32 index = instance.GetIndex();
-		Mesh *mesh = &meshes[index];
+		DXMesh *mesh = &meshes[index];
 
 		if (mesh->IsValid())
 		{
@@ -631,7 +633,7 @@ namespace cm
 			viewport.TopLeftY = 0;
 
 			uint32 mesh_index = mesh_instance.GetIndex();
-			Mesh *mesh = &meshes[mesh_index];
+			DXMesh *mesh = &meshes[mesh_index];
 			if (mesh->IsValid())
 			{
 				DXINFO(context->VSSetShader(shader.vs_shader, nullptr, 0));
@@ -686,7 +688,7 @@ namespace cm
 		viewport.TopLeftY = 0;
 
 		uint32 mesh_index = mesh_instance.GetIndex();
-		Mesh *mesh = &meshes[mesh_index];
+		DXMesh *mesh = &meshes[mesh_index];
 		if (mesh->IsValid())
 		{
 			DXINFO(context->VSSetShader(shader.vs_shader, nullptr, 0));
@@ -731,7 +733,7 @@ namespace cm
 		viewport.TopLeftY = 0;
 
 		uint32 mesh_index = mesh_instance.GetIndex();
-		Mesh *mesh = &meshes[mesh_index];
+		DXMesh *mesh = &meshes[mesh_index];
 		if (mesh->IsValid())
 		{
 			DXINFO(context->VSSetShader(shader.vs_shader, nullptr, 0));
