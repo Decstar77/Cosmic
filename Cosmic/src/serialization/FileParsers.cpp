@@ -214,14 +214,6 @@ namespace cm
 		}
 	}
 
-	void FreeModel(ModelResult *model)
-	{
-		if (model->vertices && model->indices)
-		{
-			delete[] model->vertices;
-			delete[] model->indices;
-		}
-	}
 	/*
 	EditableMesh OBJParseModel(FileResult file_result, const String &file_name, const real32 &scale)
 	{
@@ -364,8 +356,7 @@ namespace cm
 		// @NOTE: Convert into readable GPU format
 		int32 vertices_count = (int32)vertices.size();
 
-		uint32 *index_data = (uint32 *)malloc(vertices_count * sizeof(uint32));
-
+		std::vector<uint32> index_data = std::vector<uint32>(vertices_count);
 		for (uint32 i = 0; i < (uint32)vertices_count; i++)
 		{
 			VertexIndex *current_face = &vertices.at(i);
@@ -390,8 +381,7 @@ namespace cm
 			}
 		}
 
-		real32 *vertex_data = (real32 *)malloc(vertices_count * 3 * 3 * 2 * sizeof(real32));
-
+		std::vector<real32> vertex_data = std::vector<real32>(vertices_count * 3 * 3 * 2);
 		for (uint32 i = 0, vertex_data_index = 0; i < (uint32)vertices_count; i++)
 		{
 			const VertexIndex &face = vertices[i];

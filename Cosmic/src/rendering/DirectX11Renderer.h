@@ -144,7 +144,7 @@ namespace cm
 		bool InitializeDirectX(HWND window);
 		void Destroy();
 
-		MeshInstance CreateMesh(const EditableMesh &mesh);
+		void CreateMesh(MeshInstance *instance, EditableMesh *editable_mesh);
 		ShaderInstance CreateShader(const String &path);
 		TextureInstance CreateTexture(const TextureInstance &texture);
 
@@ -158,13 +158,18 @@ namespace cm
 		inline static DirectXDebug debugger;
 		inline static HWND window;
 
+		inline static MemoryAreana<DXMesh> mesh_areana;
+
 	public:
 		GraphicsContext();
 		~GraphicsContext();
 
 	private:
 
-		MemoryAreana<DXMesh> mesh_areana;
+
+	private:
+		int32 CreateMesh(real32 *vertex_data, uint32 vertex_size, uint32 vertex_stride_bytes,
+			uint32 *index_data, uint32 index_count);
 	};
 
 	class DirectXDebugRenderer : public GraphicsContext//, DebugRenderer
@@ -226,7 +231,6 @@ namespace cm
 
 		void ClearBuffer(const Vec4f &colour);
 		void RenderMesh(const MeshInstance &mesh_instance, const Transform &transform);
-		void RenderMesh(const MeshInstance &mesh_instance, const Mat4f &transform_matrix);
 		void RenderQuad(const MeshInstance &mesh_instance, const Mat4f &transform);
 		void EndFrame();
 

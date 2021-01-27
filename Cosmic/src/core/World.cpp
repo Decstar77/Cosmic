@@ -1516,12 +1516,9 @@ namespace cm
 			// @NOTE: Rendering
 			{
 				XMLElement *comp = xml_child->AddChild("Renderering");
-				MeshEntry entry = ref->GetMesh();
-				if (entry >= 0)
-				{
-					XMLElement *mesh = comp->AddChild("MeshEntry");
-					mesh->data = GameState::GetAssetTable()->mesh_meta_data.at(entry).name;
-				}
+				MeshInstance instance = ref->GetMesh();
+				XMLElement *mesh = comp->AddChild("MeshEntry");
+				mesh->data = instance.meta_data.name;
 			}
 
 			// @NOTE: Bounding box
@@ -1694,7 +1691,7 @@ namespace cm
 						{
 							XMLElement mesh = data.front();
 							data.pop_front();
-							entity->SetMesh(GameState::GetAssetTable()->FindMeshEntry(mesh.data));
+							entity->SetMesh(GameState::GetAssetTable()->FindMeshInstance(mesh.data));
 						}
 					}
 					else if (property.tag_name == "BoundingBox")
@@ -1752,7 +1749,7 @@ namespace cm
 							}
 							break;
 							case ColliderType::MESH:
-								Collider collider = GameState::GetAssetTable()->GetRawMesh(entity->GetMesh()).GetMeshCollider();
+								Collider collider = GameState::GetAssetTable()->GetEditableMesh(entity->GetMesh()).GetMeshCollider();
 								entity->SetCollider(collider);
 								break;
 							};

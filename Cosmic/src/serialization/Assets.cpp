@@ -7,7 +7,7 @@ namespace cm
 		String path = resource_path + "/meshes";
 		FolderResult meta_mesh = Platform::LoadFolder(path, ".meta");
 
-		MeshEntry current_entry = 0;
+		int32 current_entry_counter = 0;
 
 		for (FileResult &meta_file : meta_mesh.files)
 		{
@@ -16,7 +16,6 @@ namespace cm
 
 			String line;
 			MeshMetaData meta_data;
-			meta_data.entry = current_entry;
 			meta_data.base_scale = 1.0f;
 			meta_data.path = meta_file.path;
 
@@ -65,13 +64,16 @@ namespace cm
 				}
 			}
 
-			asset_table->mesh_meta_data.emplace_back(meta_data);
+			MeshInstance mesh_instance;
+			mesh_instance.meta_data = meta_data;
+			mesh_instance.asset_table_index = current_entry_counter;
 
-			current_entry++;
+			asset_table->mesh_intances.push_back(mesh_instance);
+
+			current_entry_counter++;
 		}
 
-		asset_table->mesh_raw_data.resize(meta_mesh.files.size());
-		asset_table->mesh_intances.resize(meta_mesh.files.size());
+		asset_table->editable_meshes.resize(meta_mesh.files.size());
 	}
 
 	void AssetLoader::LoadModel(const String &path)
@@ -88,14 +90,15 @@ namespace cm
 #if 0
 		worker = std::thread(&AssetLoader::DoLoadEntireFolderOfModels, this, mesh_folder);
 #else
-		MeshEntry entry = 0;
-		for (FileResult &mesh_file : mesh_folder.files)
+
+		for (int32 i = 0; i < asset_table->mesh_intances.size(); i++)
 		{
-			ModelLoadJob *job = &model_jobs.emplace_back(mesh_file, entry, asset_table);
+			MeshInstance instance = asset_table->mesh_intances.at(i);
+			FileResult &mesh_file = mesh_folder.files.at(i);
+
+			ModelLoadJob *job = &model_jobs.emplace_back(mesh_file, instance, asset_table);
 
 			JobSystem::GetInstance()->AddJob(job);
-
-			entry++;
 		}
 #endif 
 
@@ -117,90 +120,48 @@ namespace cm
 
 	void AssetLoader::DoLoadEntireFolderOfModels(FolderResult mesh_folder)
 	{
-		MeshEntry entry = 0;
-		for (FileResult &mesh_file : mesh_folder.files)
+		for (int32 i = 0; i < asset_table->mesh_intances.size(); i++)
 		{
-			ParseModel(mesh_file, entry);
-			entry++;
+			MeshInstance instance = asset_table->mesh_intances.at(i);
+			FileResult &mesh_file = mesh_folder.files.at(i);
+
+			ParseModel(mesh_file, instance);
 		}
 	}
 
-	void AssetLoader::ParseModel(const FileResult &mesh_file, const MeshEntry &mesh_entry)
+	void AssetLoader::ParseModel(const FileResult &mesh_file, const MeshInstance &mesh_instance)
 	{
-		MeshMetaData mesh_data = asset_table->GetMeshMetaData(mesh_entry);
+		MeshMetaData mesh_data = mesh_instance.meta_data;
 
 		EditableMesh mesh = EditableMesh(mesh_file, mesh_data, MeshFileType::OBJ);
 
-		asset_table->models_lock.Lock();
-
-		asset_table->mesh_load_requests.emplace(mesh_entry);
-		asset_table->mesh_raw_data.at(mesh_entry) = mesh;
-
-		asset_table->models_lock.Unlock();
+		asset_table->editable_meshes.at(mesh_instance.asset_table_index) = mesh;
 	}
 
-	ThreadedResult<EditableMesh> AssetTable::FindMeshData(const String &name)
+	MeshInstance AssetTable::FindMeshInstance(const String &name)
 	{
-		ThreadedResult<EditableMesh> mesh;
-		mesh.valid = false;
-
-		for (MeshMetaData &data : mesh_meta_data)
+		for (MeshInstance &instance : mesh_intances)
 		{
-			if (data.name == name)
+			if (instance.meta_data.name == name)
 			{
-				models_lock.Lock();
-				if (this->mesh_raw_data.at(data.entry).IsValid())
-				{
-					mesh.data = this->mesh_raw_data.at(data.entry);
-					mesh.valid = true;
-				}
-				models_lock.Unlock();
-				break;
-			}
-		}
-
-		return mesh;
-	}
-
-	MeshEntry AssetTable::FindMeshEntry(const String &name)
-	{
-		for (MeshMetaData &data : mesh_meta_data)
-		{
-			if (data.name == name)
-			{
-				return data.entry;
+				return instance;
 			}
 		}
 
 		return {};
 	}
 
-	EditableMesh AssetTable::GetRawMesh(const MeshEntry &entry)
+	EditableMesh AssetTable::GetEditableMesh(const MeshInstance &instance)
 	{
-		ASSERT(entry >= 0, "AssetTable::GetMesh tried to get invalid entry");
+		ASSERT(instance.asset_table_index >= 0, "AssetTable::GetMesh tried to get invalid entry");
 
-		models_lock.Lock();
-
-		EditableMesh mesh = mesh_raw_data.at(entry);
-
-		models_lock.Unlock();
+		EditableMesh mesh = editable_meshes.at(instance.asset_table_index);
 
 		return mesh;
 	}
 
-	MeshMetaData AssetTable::GetMeshMetaData(const MeshEntry &entry)
-	{
-		ASSERT(entry >= 0, "AssetTable::GetMesh tried to get invalid entry");
-
-		MeshMetaData mesh = mesh_meta_data.at(entry);
-
-		return mesh;
-	}
-
-
-
-	ModelLoadJob::ModelLoadJob(const FileResult &file_result, const MeshEntry &mesh_entry, AssetTable *asset_table)
-		: JobWork("ModelLoader"), mesh_file(file_result), mesh_entry(mesh_entry), asset_table(asset_table)
+	ModelLoadJob::ModelLoadJob(const FileResult &file_result, const MeshInstance &mesh_instance, AssetTable *asset_table)
+		: JobWork("ModelLoader"), mesh_file(file_result), mesh_instance(mesh_instance), asset_table(asset_table)
 	{
 
 	}
@@ -212,16 +173,9 @@ namespace cm
 
 	void ModelLoadJob::Process()
 	{
-		MeshMetaData mesh_data = asset_table->GetMeshMetaData(mesh_entry);
+		EditableMesh mesh = EditableMesh(mesh_file, mesh_instance.meta_data, MeshFileType::OBJ);
 
-		EditableMesh mesh = EditableMesh(mesh_file, mesh_data, MeshFileType::OBJ);
-
-		asset_table->models_lock.Lock();
-
-		asset_table->mesh_load_requests.emplace(mesh_entry);
-		asset_table->mesh_raw_data.at(mesh_entry) = mesh;
-
-		asset_table->models_lock.Unlock();
+		asset_table->editable_meshes.at(mesh_instance.asset_table_index) = mesh;
 	}
 
 }

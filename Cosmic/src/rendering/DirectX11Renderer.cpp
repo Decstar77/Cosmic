@@ -180,6 +180,52 @@ namespace cm
 		DXRELEASE(context);
 	}
 
+	void GraphicsContext::CreateMesh(MeshInstance *instance, EditableMesh *editable_mesh)
+	{
+		ModelResult mesh = editable_mesh->ConvertToPNTFormat();
+
+		int32 areana_index = CreateMesh(mesh.vertices.data(), mesh.vertex_size,
+			mesh.stride, mesh.indices.data(), mesh.index_count);
+
+		instance->graphics_table_index = areana_index;
+	}
+
+	int32 GraphicsContext::CreateMesh(real32 *vertex_data, uint32 vertex_size, uint32 vertex_stride_bytes, uint32 *index_data, uint32 index_count)
+	{
+		D3D11_BUFFER_DESC vertex_desc = {};
+		vertex_desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+		vertex_desc.Usage = D3D11_USAGE_DEFAULT;
+		vertex_desc.CPUAccessFlags = 0;
+		vertex_desc.MiscFlags = 0;
+		vertex_desc.ByteWidth = vertex_size * sizeof(real32);
+		vertex_desc.StructureByteStride = vertex_stride_bytes;
+
+		D3D11_SUBRESOURCE_DATA vertex_res = {};
+		vertex_res.pSysMem = vertex_data;
+
+		D3D11_BUFFER_DESC index_desc = {};
+		index_desc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+		index_desc.Usage = D3D11_USAGE_DEFAULT;
+		index_desc.CPUAccessFlags = 0;
+		index_desc.MiscFlags = 0;
+		index_desc.ByteWidth = index_count * sizeof(uint32);
+		index_desc.StructureByteStride = sizeof(uint32);
+
+		D3D11_SUBRESOURCE_DATA index_res = {};
+		index_res.pSysMem = index_data;
+
+		DXMesh mesh;
+		mesh.index_count = index_count;
+		mesh.stride_bytes = vertex_stride_bytes;
+		mesh.vertex_size = vertex_size;
+		DXCHECK(device->CreateBuffer(&vertex_desc, &vertex_res, &mesh.vertex_buffer));
+		DXCHECK(device->CreateBuffer(&index_desc, &index_res, &mesh.index_buffer));
+
+		int32 index = static_cast<int32>(mesh_areana.Add(mesh));
+
+		return index;
+	}
+
 	GraphicsContext::GraphicsContext()
 	{
 
@@ -386,10 +432,8 @@ namespace cm
 	{
 		ModelResult sphere_mesh = mesh.ConvertToPNTFormat();
 
-		MeshInstance inst = CreateMesh(sphere_mesh.vertices, sphere_mesh.vertex_size,
-			sphere_mesh.stride, sphere_mesh.indices, sphere_mesh.index_count);
-
-		FreeModel(&sphere_mesh);
+		MeshInstance inst = CreateMesh(sphere_mesh.vertices.data(), sphere_mesh.vertex_size,
+			sphere_mesh.stride, sphere_mesh.indices.data(), sphere_mesh.index_count);
 
 		return inst;
 	}
@@ -431,7 +475,8 @@ namespace cm
 
 		meshes[index] = mesh;
 
-		MeshInstance mesh_instance(index);
+		MeshInstance mesh_instance;
+		mesh_instance.index = index;
 
 		return mesh_instance;
 	}
@@ -572,7 +617,7 @@ namespace cm
 
 	void DirectXImmediateRenderer::FreeMesh(MeshInstance instance)
 	{
-		uint32 index = instance.GetIndex();
+		uint32 index = instance.index;
 		DXMesh *mesh = &meshes[index];
 
 		if (mesh->IsValid())
@@ -602,7 +647,7 @@ namespace cm
 
 	void DirectXImmediateRenderer::RenderMesh(const MeshInstance &mesh_instance, const Transform &transform)
 	{
-		if (mesh_instance.IsValid())
+		if (mesh_instance.IsOnGPU())
 		{
 			Mat4f m = transform.CalculateTransformMatrix();
 
@@ -632,8 +677,9 @@ namespace cm
 			viewport.TopLeftX = 0;
 			viewport.TopLeftY = 0;
 
-			uint32 mesh_index = mesh_instance.GetIndex();
-			DXMesh *mesh = &meshes[mesh_index];
+
+			DXMesh *mesh = GraphicsContext::mesh_areana.Get(mesh_instance.graphics_table_index);
+
 			if (mesh->IsValid())
 			{
 				DXINFO(context->VSSetShader(shader.vs_shader, nullptr, 0));
@@ -659,60 +705,6 @@ namespace cm
 		}
 	}
 
-	void DirectXImmediateRenderer::RenderMesh(const MeshInstance &mesh_instance, const Mat4f &transform_matrix)
-	{
-		Mat4f const_buffer_data[2];
-		const_buffer_data[0] = transform_matrix * view_matrix * projection_matrix;
-		const_buffer_data[1] = Inverse(const_buffer_data[0]);
-
-		const_buffer_data[0] = Transpose(const_buffer_data[0]);
-		const_buffer_data[1] = Transpose(const_buffer_data[1]);
-
-		//D3D11_MAPPED_SUBRESOURCE map = {};
-		//DXCHECK(context->Map(const_buffer, 0, D3D11_MAP_WRITE, 0, &map));
-
-		DXINFO(context->UpdateSubresource(const_buffer, 0, nullptr, const_buffer_data, 0, 0));
-
-		RECT rect;
-		GetClientRect(window, &rect);
-
-		real32 window_width = (real32)(rect.right - rect.left);
-		real32 window_height = (real32)(rect.bottom - rect.top);
-
-		D3D11_VIEWPORT viewport;
-		viewport.Width = window_width;
-		viewport.Height = window_height;
-		viewport.MinDepth = 0;
-		viewport.MaxDepth = 1;
-		viewport.TopLeftX = 0;
-		viewport.TopLeftY = 0;
-
-		uint32 mesh_index = mesh_instance.GetIndex();
-		DXMesh *mesh = &meshes[mesh_index];
-		if (mesh->IsValid())
-		{
-			DXINFO(context->VSSetShader(shader.vs_shader, nullptr, 0));
-			DXINFO(context->PSSetShader(shader.ps_shader, nullptr, 0));
-
-			DXINFO(context->VSSetConstantBuffers(0, 1, &const_buffer));
-
-			uint32 offset = 0;
-			DXINFO(context->IASetVertexBuffers(0, 1, &mesh->vertex_buffer, &mesh->stride_bytes, &offset));
-
-			DXINFO(context->IASetIndexBuffer(mesh->index_buffer, DXGI_FORMAT_R32_UINT, 0));
-
-			DXINFO(context->IASetInputLayout(shader.layout));
-
-			DXINFO(context->RSSetViewports(1, &viewport));
-
-			DXINFO(context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST));
-
-			DXINFO(context->OMSetRenderTargets(1, &render_target, depth_target));
-
-			DXINFO(context->DrawIndexed(mesh->index_count, 0, 0));
-		}
-	}
-
 	void DirectXImmediateRenderer::RenderQuad(const MeshInstance &mesh_instance, const Mat4f &transform)
 	{
 
@@ -732,7 +724,7 @@ namespace cm
 		viewport.TopLeftX = 0;
 		viewport.TopLeftY = 0;
 
-		uint32 mesh_index = mesh_instance.GetIndex();
+		uint32 mesh_index = mesh_instance.index;
 		DXMesh *mesh = &meshes[mesh_index];
 		if (mesh->IsValid())
 		{

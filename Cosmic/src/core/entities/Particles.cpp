@@ -42,7 +42,7 @@ namespace cm
 		this->SetType(EntityType::PARTICEL_EMITTER);
 
 		this->SetCollider(CreateAABBFromCenterRadius(Vec3f(0), Vec3f(1)));
-		this->SetMesh(GameState::GetAssetTable()->FindMeshEntry("cube"));
+		this->SetMesh(GameState::GetAssetTable()->FindMeshInstance("cube"));
 
 		transform.scale = Vec3(0.1f);
 		transform.position.y = 5.0f;

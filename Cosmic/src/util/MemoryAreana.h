@@ -24,7 +24,7 @@ namespace cm
 			}
 			else
 			{
-				uint32 index = data.size();
+				uint32 index = static_cast<uint32>(data.size());
 				data.emplace_back(t);
 				count++;
 
@@ -32,7 +32,12 @@ namespace cm
 			}
 		}
 
-		T* Remove(const uint32 &index)
+		inline T* Get(const uint32 &index)
+		{
+			return &data.at(index);
+		}
+
+		inline T* Remove(const uint32 &index)
 		{
 			freelist.push(index);
 

@@ -99,22 +99,22 @@ namespace cm
 
 			if (ImGui::TreeNode("Rendering"))
 			{
-				MeshEntry mesh_entry = entity->GetMesh();
+				MeshInstance mesh_entry = entity->GetMesh();
 
 				StringStream ss;
 
-				for (MeshMetaData &data : game_state->asset_table->mesh_meta_data)
+				for (MeshInstance &data : game_state->asset_table->mesh_intances)
 				{
-					ss << data.name << '\0';
+					ss << data.meta_data.name << '\0';
 				}
 
 				ComboListInfo meshes;
-				meshes.current_item = mesh_entry;
+				meshes.current_item = mesh_entry.asset_table_index;
 				meshes.list = ss.str();
 
 				if (ImGui::Combo("Mesh", &meshes.current_item, meshes.list.c_str()))
 				{
-					MeshEntry new_mesh_entry = static_cast<MeshEntry>(meshes.current_item);
+					MeshInstance new_mesh_entry = game_state->asset_table->mesh_intances.at(meshes.current_item);
 					entity->SetMesh(new_mesh_entry);
 				}
 				ImGui::TreePop();
@@ -156,7 +156,7 @@ namespace cm
 				break;
 				case ColliderType::MESH:
 				{
-					collider = GameState::GetAssetTable()->GetRawMesh(entity->GetMesh()).GetMeshCollider();
+					collider = GameState::GetAssetTable()->GetEditableMesh(entity->GetMesh()).GetMeshCollider();
 					int32 size = (int32)collider.mesh.size();
 					String info1 = "Triangle count: " + std::to_string(size);
 					real32 r = (3.0f / 740.0f) * size + 7.0f / 74.0f;
@@ -739,7 +739,7 @@ namespace cm
 					//	}
 					//}
 					{
-						MeshCollider list = game_state->GetAssetTable()->GetRawMesh(entity->GetMesh()).GetMeshCollider();
+						MeshCollider list = game_state->GetAssetTable()->GetEditableMesh(entity->GetMesh()).GetMeshCollider();
 
 						Mat4f entity_matrix = entity->GetGlobalTransformMatrix();
 						Mat4f inv_entity_matrix = Inverse(entity_matrix);

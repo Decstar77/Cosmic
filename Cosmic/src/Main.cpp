@@ -56,6 +56,18 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		game_state.asset_table = asset_table.get();
 		asset_loader->LoadEntireFolderOfModels("../res/meshes");
 
+		while (job_system->HasThreadsWorking())
+		{
+			//std::this_thread::sleep_for(std::chrono::milliseconds(20));
+		}
+
+		for (MeshInstance &mesh : asset_table->mesh_intances)
+		{
+			EditableMesh *editable_mesh = &asset_table->editable_meshes.at(mesh.asset_table_index);
+
+			graphics_context->CreateMesh(&mesh, editable_mesh);
+		}
+
 		std::unique_ptr<World> world = std::make_unique<World>();
 		//std::unique_ptr<WorldRenderer> world_renderer = std::make_unique<WorldRenderer>();
 
@@ -78,8 +90,8 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		ground->transform.position = Vec3f(0.0f, 0.0f, 0.0f);
 		ground->transform.scale = Vec3f(20.0f);
 		ground->transform.orientation = EulerToQuat(Vec3f(0, 0, 0));
-		ground->SetMesh(GameState::GetAssetTable()->FindMeshEntry("CM_Bld_Floor5x5"));
-		ground->SetCollider(asset_table->GetRawMesh(ground->GetMesh()).GetMeshCollider());
+		ground->SetMesh(GameState::GetAssetTable()->FindMeshInstance("CM_Bld_Floor5x5"));
+		ground->SetCollider(asset_table->GetEditableMesh(ground->GetMesh()).GetMeshCollider());
 
 		GameCamera *game_cam = world->CreateEntity<GameCamera>();
 		Drone *drone = world->CreateEntity<Drone>();
@@ -92,21 +104,6 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		real32 dt = 0.016f;
 		while (window->PollMessages())
 		{
-			if (!asset_table->models_lock.IsLocked())
-			{
-				asset_table->models_lock.Lock();
-
-				while (asset_table->mesh_load_requests.size() != 0)
-				{
-					MeshEntry mesh_entry = asset_table->mesh_load_requests.front();
-					asset_table->mesh_load_requests.pop();
-					asset_table->mesh_intances.at(mesh_entry) = renderer->CreateMesh(asset_table->mesh_raw_data.at(mesh_entry));
-					LOG("Populated: " << (mesh_entry));
-				}
-
-				asset_table->models_lock.Unlock();
-			}
-
 			if (KeyInput::GetKeyJustDown(KeyCode::F5))
 			{
 				in_editor = !in_editor;
@@ -159,18 +156,18 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 
 
 			std::vector<Entity *> renderable_entities = world->CreateCollection([](Entity *entity) {
-				return entity->active && entity->should_draw && entity->GetMesh() != INVALID_MESH_ENTRY;
+				return entity->active && entity->should_draw && entity->GetMesh().IsOnGPU();
 			});
 
 			for (GridCell &cell : world->grid.cells)
 			{
 				if (!cell.empty)
-					renderer->RenderMesh(asset_table->mesh_intances.at(asset_table->FindMeshEntry("cube")), Transform(cell.center));
+					renderer->RenderMesh(asset_table->FindMeshInstance("cube"), Transform(cell.center));
 			}
 
 			for (Entity *entity : renderable_entities)
 			{
-				renderer->RenderMesh(asset_table->mesh_intances.at((int32)entity->GetMesh()), entity->GetGlobalTransform());
+				renderer->RenderMesh(entity->GetMesh(), entity->GetGlobalTransform());
 			}
 
 			//world_renderer->Render(world.get());

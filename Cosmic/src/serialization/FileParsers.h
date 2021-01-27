@@ -75,7 +75,7 @@ namespace cm
 
 	struct VertexIndex
 	{
-		int32 other_index; // @NOTE: The index into the vertices array that is an exact copy of this face
+		int32 other_index;		// @NOTE: The index into the vertices array that is an exact copy of this face
 		int32 position_index;
 		int32 tcoord_index;
 		int32 normal_index;
@@ -83,17 +83,14 @@ namespace cm
 
 	struct ModelResult
 	{
-		uint32 stride = 0;       // @NOTE: The stride of the vertices, right now it's 3f * 3f * 2f
-		real32 scale = 0.0f;     // @NOTE: Scale to bake the model
-		uint32 vertex_count = 0; // @NOTE: The total individual vertices
-		uint32 index_count = 0;  // @NOTE: The size of indices array;
-		uint32 vertex_size = 0;  // @NOTE: The size of vertices array;
-		real32 *vertices;
-		uint32 *indices;
-		String file_name;
+		uint32 stride = 0;					// @NOTE: The stride of the vertices, right now it's 3f * 3f * 2f
+		real32 scale = 0.0f;				// @NOTE: Scale to bake the model
+		uint32 vertex_count = 0;			// @NOTE: The total individual vertices
+		uint32 index_count = 0;				// @NOTE: The size of indices array;
+		uint32 vertex_size = 0;				// @NOTE: The size of vertices array;
+		std::vector<real32> vertices;
+		std::vector<uint32> indices;
 	};
-
-	void FreeModel(ModelResult *model);
 
 	enum class MeshFileType
 	{
@@ -102,9 +99,8 @@ namespace cm
 		DAE
 	};
 
-	struct MeshMetaData//MeshEntry
+	struct MeshMetaData
 	{
-		MeshEntry entry;
 		String name;
 		String path;
 		real32 base_scale;

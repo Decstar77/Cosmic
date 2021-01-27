@@ -48,7 +48,7 @@ namespace cm
 		weapon->SetPosition(Vec3f(0.296f, -0.311f, 0.643f));
 		Vec3f dir = camera->transform.GetBasis().forward;
 		weapon->transform.LookAtLH(camera->transform.position + -100.0f * dir);
-		weapon->SetMesh(GameState::GetAssetTable()->FindMeshEntry("SM_Wep_Rifle_Small_01"));
+		weapon->SetMesh(GameState::GetAssetTable()->FindMeshInstance("SM_Wep_Rifle_Small_01"));
 		weapon->SetParent(camera);
 	}
 

@@ -3,6 +3,7 @@
 
 #include "src/Cosmic.h"
 #include "src/math/CosmicMath.h"
+#include "src/serialization/FileParsers.h"
 
 namespace cm
 {
@@ -14,13 +15,18 @@ namespace cm
 	class MeshInstance
 	{
 	public:
-		MeshInstance() {};
-		MeshInstance(uint32 index) { this->index = index; }
-		inline uint32 GetIndex() const { return index; }
-		inline bool IsValid() const { return index != UINT32_MAX; }
+		MeshMetaData meta_data;
+		int32 asset_table_index = -1;
+		int32 graphics_table_index = -1;
 
-	private:
-		uint32 index = UINT32_MAX;
+		int32 index = -1;
+
+		inline bool IsOnGPU() const { return graphics_table_index >= 0; }
+
+	public:
+		MeshInstance() {}
+		~MeshInstance() {}
+
 	};
 
 	class TextureInstance

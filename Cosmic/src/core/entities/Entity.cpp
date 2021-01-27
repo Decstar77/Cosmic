@@ -244,14 +244,14 @@ namespace cm
 		return collider;
 	}
 
-	void Entity::SetMesh(const MeshEntry &mesh)
+	void Entity::SetMesh(const MeshInstance &mesh)
 	{
 		this->mesh = mesh;
-		local_bounding_box = GameState::GetAssetTable()->GetMeshMetaData(mesh).bounding_box;
+		local_bounding_box = mesh.meta_data.bounding_box;
 	}
 
 	Entity::Entity()
-		: type(EntityType::INVALID), behaviour(EntityBehaviour::UPDATABLE_ENTITY), name("UNTITLED ENTITY"), mesh(-1),
+		: type(EntityType::INVALID), behaviour(EntityBehaviour::UPDATABLE_ENTITY), name("UNTITLED ENTITY"),
 		active(true), simulate_physics(false), should_draw(true),
 		parent(NULL_ENTITY_INDEX), child(NULL_ENTITY_INDEX), sibling(NULL_ENTITY_INDEX)
 	{
@@ -260,14 +260,14 @@ namespace cm
 
 	Entity::Entity(const EntityType &type, const String &name /*= "UNTITLED ENTITY"*/)
 		: type(type), behaviour(EntityBehaviour::UPDATABLE_ENTITY),
-		name(name), mesh(-1), active(true), simulate_physics(false), should_draw(true),
+		name(name), active(true), simulate_physics(false), should_draw(true),
 		parent(NULL_ENTITY_INDEX), child(NULL_ENTITY_INDEX), sibling(NULL_ENTITY_INDEX)
 	{
 
 	}
 
 	Entity::Entity(const EntityType &type, const Transform &transform, const String &name /*= "UNTITLED ENTITY"*/)
-		: type(type), behaviour(EntityBehaviour::UPDATABLE_ENTITY), transform(transform), name(name), mesh(-1),
+		: type(type), behaviour(EntityBehaviour::UPDATABLE_ENTITY), transform(transform), name(name),
 		active(true), simulate_physics(false), should_draw(true),
 		parent(NULL_ENTITY_INDEX), child(NULL_ENTITY_INDEX), sibling(NULL_ENTITY_INDEX)
 	{

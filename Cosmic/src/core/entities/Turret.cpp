@@ -15,7 +15,7 @@ namespace cm
 
 	void Turret::Start()
 	{
-		SetMesh(GameState::GetAssetTable()->FindMeshEntry("SM_Prop_Drone_Insect_01"));
+		SetMesh(GameState::GetAssetTable()->FindMeshInstance("SM_Prop_Drone_Insect_01"));
 	}
 
 	void Turret::Update(const real32 &dt)

@@ -3,6 +3,8 @@
 #include "src/math/CosmicMath.h"
 #include "src/math/CosmicGeometry.h"
 
+#include "src/rendering/Renderer.h"
+
 namespace cm
 {
 	class World;
@@ -129,8 +131,8 @@ namespace cm
 		inline Collider GetCollider() const { return local_collider; }
 		Collider GetGlobalCollider() const;
 
-		inline MeshEntry GetMesh() const { return mesh; }
-		void SetMesh(const MeshEntry &mesh);
+		inline MeshInstance GetMesh() const { return mesh; }
+		void SetMesh(const MeshInstance &mesh);
 
 		virtual void Start() {};
 		virtual void Update(const real32 &dt) {};
@@ -151,7 +153,7 @@ namespace cm
 		AABB local_bounding_box;
 
 	private:
-		MeshEntry mesh;
+		MeshInstance mesh;
 
 		int32 id;
 		int32 index;
