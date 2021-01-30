@@ -16,6 +16,8 @@ namespace cm
 		std::vector<EditorWindow*> editor_windows;
 		std::vector<std::shared_ptr<EditorChain>> editor_chain;
 
+		GraphicsContext *gc;
+
 	public:
 		void Start();
 		void Update(GameState *game_state);
@@ -24,7 +26,7 @@ namespace cm
 		virtual LRESULT HandleMessage(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) override;
 
 	public:
-		Editor();
+		Editor(GraphicsContext *gc);
 		Editor(const Editor &) = delete;
 		Editor &operator=(const Editor &) = delete;
 		virtual ~Editor() {};

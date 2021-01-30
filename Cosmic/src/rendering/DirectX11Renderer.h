@@ -175,22 +175,25 @@ namespace cm
 		void CreateShader(ShaderInstance *instance, EditableShader *editable_shader);
 		void CreateTexture(TextureInstance *instance, EditableTexture *edtiable_texture);
 
+		void Present();
+		void ClearBuffer(const Vec4f &colour);
+
 	public:
-		inline static ID3D11Device *device = nullptr;
-		inline static ID3D11DeviceContext *context = nullptr;
+		ID3D11Device *device = nullptr;
+		ID3D11DeviceContext *context = nullptr;
 
-		inline static IDXGISwapChain *swapchain = nullptr;
-		inline static ID3D11RenderTargetView *render_target = nullptr;
-		inline static ID3D11DepthStencilView *depth_target = nullptr;
+		IDXGISwapChain *swapchain = nullptr;
+		ID3D11RenderTargetView *render_target = nullptr;
+		ID3D11DepthStencilView *depth_target = nullptr;
 
-		inline static DirectXDebug debugger;
-		inline static HWND window;
+		DirectXDebug debugger;
+		HWND window;
 
-		inline static MemoryAreana<DXMesh> mesh_areana;
-		inline static MemoryAreana<DXShader> shader_areana;
-		inline static MemoryAreana<DXTexture> texture_areana;
+		MemoryAreana<DXMesh> mesh_areana;
+		MemoryAreana<DXShader> shader_areana;
+		MemoryAreana<DXTexture> texture_areana;
 
-		inline static const int32 total_texture_resigters = 8;
+		const int32 total_texture_resigters = 8;
 
 	public:
 		GraphicsContext();
@@ -231,10 +234,10 @@ namespace cm
 	};
 
 
-	class DirectXDebugRenderer : public GraphicsContext//, DebugRenderer
+	class DirectXDebugRenderer
 	{
 	public:
-		Pipeline pipeline;
+		ShaderInstance shader_instance;
 		ID3D11Buffer *vertex_buffer = nullptr;
 		ID3D11Buffer *const_buffer = nullptr;
 
@@ -245,12 +248,14 @@ namespace cm
 		void RenderAndFlush();
 
 	public:
-		DirectXDebugRenderer();
+		DirectXDebugRenderer(GraphicsContext *graphics_context);
 		DirectXDebugRenderer(const DirectXDebugRenderer &) = delete;
 		DirectXDebugRenderer &operator=(const DirectXDebugRenderer &) = delete;
 		~DirectXDebugRenderer();
 
 	private:
+		GraphicsContext *gc;
+
 		int32 vertex_stride = 3;
 		int32 vertex_count = 20000;
 		int32 vertex_size_bytes = vertex_count * vertex_stride * sizeof(real32);
@@ -265,57 +270,6 @@ namespace cm
 		void CreateConstBuffer();
 		void PushLine(const Vec3f &a, const Vec3f &b);
 		void PushLine(const Vec4f &a, const Vec4f &b);
-	};
-
-	class DirectXImmediateRenderer : public GraphicsContext
-	{
-	public:
-		inline static DirectXImmediateRenderer *GetInstance();
-		void LOGGPUCards();
-
-		void SetMatrices(const Mat4f &view, const Mat4f &proj);
-		void SetTexture(Texture texture);
-
-		MeshInstance CreateMesh(const String &file_name, const real32 &scale = 1.0f);
-		MeshInstance CreateMesh(EditableMesh &mesh);
-		MeshInstance CreateMesh(real32 *vertex_data, uint32 vertex_size, uint32 vertex_stride_bytes,
-			uint32 *index_data, uint32 index_count);
-		void FreeMesh(MeshInstance instance);
-
-		Pipeline CreatePipline(const String &vertex_dir, const String &pixel_dir);
-
-		Texture CreateTexture(uint32 width, uint32 height, uint32 num_channels, uint8 *data);
-		void FreeTexture(Texture *texture);
-
-		void ClearBuffer(const Vec4f &colour);
-		void RenderMesh(const MeshInstance &mesh_instance, const Transform &transform);
-		void EndFrame();
-
-	public:
-		DirectXImmediateRenderer(HWND window);
-		DirectXImmediateRenderer(const DirectXImmediateRenderer &) = delete;
-		DirectXImmediateRenderer &operator=(const DirectXImmediateRenderer &) = delete;
-
-		~DirectXImmediateRenderer();
-
-		Pipeline shader;
-
-	private:
-		inline static DirectXImmediateRenderer *instance = nullptr;
-		ID3D11Buffer *const_buffer = nullptr;
-		Mat4f view_matrix;
-		Mat4f projection_matrix;
-
-		const uint32 total_mesh_count = 1000;
-		std::vector<DXMesh> meshes;
-		std::stack<uint32> mesh_free_list;
-
-		const uint32 total_shader_count = 1000;
-		std::vector<Pipeline> shaders;
-		std::stack<uint32> shader_free_list;
-
-		void CreateDevice();
-		void CreateArrays();
 	};
 
 } // namespace cm

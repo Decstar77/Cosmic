@@ -131,7 +131,8 @@ namespace cm
 		return false;
 	}
 
-	Editor::Editor()
+	Editor::Editor(GraphicsContext *gc)
+		: gc(gc)
 	{
 
 	}
@@ -146,8 +147,8 @@ namespace cm
 		colors[ImGuiCol_TitleBgActive] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
 		colors[ImGuiCol_Header] = ImVec4(1.00f, 1.00f, 1.00f, 0.31f);
 
-		ImGui_ImplWin32_Init(GraphicsContext::window);
-		ImGui_ImplDX11_Init(GraphicsContext::device, GraphicsContext::context);
+		ImGui_ImplWin32_Init(gc->window);
+		ImGui_ImplDX11_Init(gc->device, gc->context);
 	}
 
 	void Editor::BeginFrame()

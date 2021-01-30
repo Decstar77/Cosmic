@@ -35,13 +35,12 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		std::unique_ptr<GraphicsContext> graphics_context = std::make_unique<GraphicsContext>();
 		graphics_context->InitializeDirectX(window->GetHandle());
 
-		std::unique_ptr<DirectXImmediateRenderer> renderer = std::make_unique<DirectXImmediateRenderer>(window->GetHandle());
 		std::unique_ptr<WorldRenderer> world_renderer = std::make_unique<WorldRenderer>(graphics_context.get());
 
 		// @TODO: Debug removal
-		std::unique_ptr<DirectXDebugRenderer> debug_renderer = std::make_unique<DirectXDebugRenderer>();
+		std::unique_ptr<DirectXDebugRenderer> debug_renderer = std::make_unique<DirectXDebugRenderer>(graphics_context.get());
 		std::unique_ptr<Debug> debug = std::make_unique<Debug>(debug_renderer.get());
-		std::unique_ptr<Editor> editor = std::make_unique<Editor>();
+		std::unique_ptr<Editor> editor = std::make_unique<Editor>(graphics_context.get());
 
 		std::unique_ptr<JobSystem> job_system = std::make_unique<JobSystem>(); // @TODO: Remove singloton
 
@@ -72,6 +71,9 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		asset_loader->LoadShader("t.vert.cso", "t.pixl.cso");
 		graphics_context->CreateShader(&asset_table->shader_instances.at(0), &asset_table->editable_shaders.at(0));
 
+		asset_loader->LoadShader("debug_line.vert.cso", "debug_line.pixl.cso");
+		graphics_context->CreateShader(&asset_table->shader_instances.at(1), &asset_table->editable_shaders.at(1));
+
 		asset_loader->LoadTexture("../res/PolygonScifi_01_A.png");
 		graphics_context->CreateTexture(&asset_table->texture_instances.at(0), &asset_table->editable_textures.at(0));
 
@@ -84,14 +86,8 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 
 		game_state.SetActiveWorld(world.get());
 
-		renderer->shader = renderer->CreatePipline("t.vert.cso", "t.pixl.cso");
-		debug_renderer->pipeline = renderer->CreatePipline("debug_line.vert.cso", "debug_line.pixl.cso");
+		debug_renderer->shader_instance = asset_table->shader_instances.at(1);
 
-		FileResult text_file = Platform::LoadFile("../res/PolygonScifi_01_A.png");
-		EditableTexture texture = EditableTexture(text_file);
-		Texture t = renderer->CreateTexture(texture.meta_data.width, texture.meta_data.height, texture.meta_data.channel_count, texture.pixel_data.data());
-
-		renderer->SetTexture(t);
 
 		bool in_editor = false;
 		editor->Start();
@@ -161,10 +157,9 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 
 			sound_system->SetListenerTransform(Camera::GetActiveCamera()->GetGlobalTransform());
 
-			debug_renderer->SetMatrices(Camera::GetActiveCamera()->CalculateViewMatrix(), Camera::GetActiveCamera()->CalculateProjectionMatrix());
-			renderer->SetMatrices(Camera::GetActiveCamera()->CalculateViewMatrix(), Camera::GetActiveCamera()->CalculateProjectionMatrix());
-			renderer->ClearBuffer(Vec4f(0.45f, 0.65f, 0.85f, 1.0f));
+			graphics_context->ClearBuffer(Vec4f(0.45f, 0.65f, 0.85f, 1.0f));
 
+			debug_renderer->SetMatrices(Camera::GetActiveCamera()->CalculateViewMatrix(), Camera::GetActiveCamera()->CalculateProjectionMatrix());
 			world_renderer->SetMatrices(Camera::GetActiveCamera()->CalculateViewMatrix(),
 				Camera::GetActiveCamera()->CalculateProjectionMatrix());
 
@@ -176,7 +171,6 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 			{
 				if (!cell.empty)
 				{
-					//renderer->RenderMesh(asset_table->FindMeshInstance("cube"), Transform(cell.center));
 					world_renderer->RenderMesh(asset_table->FindMeshInstance("cube"), material, Transform(cell.center));
 				}
 			}
@@ -184,8 +178,6 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 			for (Entity *entity : renderable_entities)
 			{
 				world_renderer->RenderMesh(entity->GetMesh(), material, entity->GetGlobalTransform());
-
-				//renderer->RenderMesh(entity->GetMesh(), entity->GetGlobalTransform());
 			}
 
 			//world_renderer->Render(world.get());
@@ -197,11 +189,10 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 				editor->Render();
 			}
 
-			renderer->EndFrame();
+			graphics_context->Present();
 
 			clock.End();
-			//dt = clock.Get().delta_seconds;
-			dt = 0.016f;
+			dt = clock.Get().delta_seconds;
 			clock.Start();
 		}
 	}

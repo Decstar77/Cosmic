@@ -350,6 +350,17 @@ namespace cm
 		instance->graphics_table_index = index;
 	}
 
+	void GraphicsContext::Present()
+	{
+		DXCHECK(swapchain->Present(1, 0));
+	}
+
+	void GraphicsContext::ClearBuffer(const Vec4f &colour)
+	{
+		DXINFO(context->ClearRenderTargetView(render_target, colour.ptr));
+		DXINFO(context->ClearDepthStencilView(depth_target, D3D11_CLEAR_DEPTH, 1.0f, 0));
+	}
+
 	GraphicsContext::GraphicsContext()
 	{
 
@@ -378,20 +389,22 @@ namespace cm
 
 	void DirectXDebugRenderer::RenderAndFlush()
 	{
+		DirectXDebug &debugger = gc->debugger; // @TODO: Remove
+
 		Mat4f const_buffer_data;
 		const_buffer_data = view_matrix * projection_matrix;
 		const_buffer_data = Transpose(const_buffer_data);
 
-		DXINFO(context->UpdateSubresource(const_buffer, 0, nullptr, const_buffer_data.ptr, 0, 0));
+		DXINFO(gc->context->UpdateSubresource(const_buffer, 0, nullptr, const_buffer_data.ptr, 0, 0));
 
 		D3D11_MAPPED_SUBRESOURCE resource;
 
-		DXCHECK(context->Map(vertex_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &resource));
+		DXCHECK(gc->context->Map(vertex_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &resource));
 		memcpy(resource.pData, vertex_data, vertex_size_bytes);
-		DXINFO(context->Unmap(vertex_buffer, 0));
+		DXINFO(gc->context->Unmap(vertex_buffer, 0));
 
 		RECT rect;
-		GetClientRect(window, &rect);
+		GetClientRect(gc->window, &rect);
 
 		real32 window_width = (real32)(rect.right - rect.left);
 		real32 window_height = (real32)(rect.bottom - rect.top);
@@ -404,30 +417,34 @@ namespace cm
 		viewport.TopLeftX = 0;
 		viewport.TopLeftY = 0;
 
-		DXINFO(context->VSSetShader(pipeline.vs_shader, nullptr, 0));
-		DXINFO(context->PSSetShader(pipeline.ps_shader, nullptr, 0));
+		DXShader *shader = gc->shader_areana.Get(shader_instance.graphics_table_index);
+		shader->Bind(gc);
 
-		DXINFO(context->VSSetConstantBuffers(0, 1, &const_buffer));
+		DXINFO(gc->context->VSSetShader(shader->vs_shader, nullptr, 0));
+		DXINFO(gc->context->PSSetShader(shader->ps_shader, nullptr, 0));
+
+		DXINFO(gc->context->IASetInputLayout(shader->layout));
+
+		DXINFO(gc->context->VSSetConstantBuffers(0, 1, &const_buffer));
 
 		uint32 offset = 0;
 		uint32 vertex_stride_bytes = vertex_stride * sizeof(real32);
-		DXINFO(context->IASetVertexBuffers(0, 1, &vertex_buffer, &vertex_stride_bytes, &offset));
+		DXINFO(gc->context->IASetVertexBuffers(0, 1, &vertex_buffer, &vertex_stride_bytes, &offset));
 
-		DXINFO(context->IASetInputLayout(pipeline.layout));
+		DXINFO(gc->context->RSSetViewports(1, &viewport));
 
-		DXINFO(context->RSSetViewports(1, &viewport));
+		DXINFO(gc->context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST));
 
-		DXINFO(context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST));
+		DXINFO(gc->context->OMSetRenderTargets(1, &gc->render_target, gc->depth_target));
 
-		DXINFO(context->OMSetRenderTargets(1, &render_target, depth_target));
-
-		DXINFO(context->Draw(vertex_count, 0));
+		DXINFO(gc->context->Draw(vertex_count, 0));
 
 		ZeroMemory(vertex_data, vertex_size_bytes);
 		next_vertex_index = 0;
 	}
 
-	DirectXDebugRenderer::DirectXDebugRenderer()
+	DirectXDebugRenderer::DirectXDebugRenderer(GraphicsContext *graphics_context)
+		: gc(graphics_context)
 	{
 		CreateVertexBuffer();
 		CreateConstBuffer();
@@ -439,6 +456,8 @@ namespace cm
 
 	void DirectXDebugRenderer::CreateVertexBuffer()
 	{
+		DirectXDebug &debugger = gc->debugger; // @TODO: Remove
+
 		D3D11_BUFFER_DESC vertex_desc = {};
 		vertex_desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 		vertex_desc.Usage = D3D11_USAGE_DYNAMIC;
@@ -450,11 +469,13 @@ namespace cm
 		D3D11_SUBRESOURCE_DATA vertex_res = {};
 		vertex_res.pSysMem = vertex_data;
 
-		DXCHECK(device->CreateBuffer(&vertex_desc, &vertex_res, &vertex_buffer));
+		DXCHECK(gc->device->CreateBuffer(&vertex_desc, &vertex_res, &vertex_buffer));
 	}
 
 	void DirectXDebugRenderer::CreateConstBuffer()
 	{
+		DirectXDebug &debugger = gc->debugger; // @TODO: Remove
+
 		D3D11_BUFFER_DESC cdc = {};
 		cdc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 		cdc.Usage = D3D11_USAGE_DEFAULT; //D3D11_USAGE_DYNAMIC;
@@ -465,7 +486,7 @@ namespace cm
 		D3D11_SUBRESOURCE_DATA cdc_sub = {};
 		cdc_sub.pSysMem = Mat4f(1).ptr;
 
-		DXCHECK(device->CreateBuffer(&cdc, &cdc_sub, &const_buffer));
+		DXCHECK(gc->device->CreateBuffer(&cdc, &cdc_sub, &const_buffer));
 	}
 
 	void DirectXDebugRenderer::PushLine(const Vec3f &a, const Vec3f &b)
@@ -492,432 +513,6 @@ namespace cm
 		vertex_data[next_vertex_index + 1] = b.y;
 		vertex_data[next_vertex_index + 2] = b.z;
 		next_vertex_index += vertex_stride;
-	}
-
-	inline DirectXImmediateRenderer *DirectXImmediateRenderer::GetInstance()
-	{
-		ASSERT(instance, "Tried to get DirectXImmediateRenderer instance but non exists");
-
-		return instance;
-	}
-
-	DirectXImmediateRenderer::DirectXImmediateRenderer(HWND window)
-	{
-		if (!instance)
-		{
-			CreateDevice();
-			CreateArrays();
-			instance = this;
-		}
-		else
-		{
-			ASSERT(0, "Trying to create another DirectXImmediateRenderer when one exists.");
-		}
-	}
-
-	DirectXImmediateRenderer::~DirectXImmediateRenderer()
-	{
-		DXRELEASE(render_target)
-			DXRELEASE(context)
-			DXRELEASE(swapchain)
-			DXRELEASE(device)
-	}
-
-	void DirectXImmediateRenderer::SetMatrices(const Mat4f &view, const Mat4f &proj)
-	{
-		view_matrix = view;
-		projection_matrix = proj;
-	}
-
-	void DirectXImmediateRenderer::SetTexture(Texture texture)
-	{
-		DXINFO(context->PSSetShaderResources(0, 1, &texture.view));
-		DXINFO(context->PSSetSamplers(0, 1, &texture.sampler));
-	}
-
-	//MeshInstance DirectXImmediateRenderer::CreateMesh(const String &file_name, const real32 &scale)
-	//{
-	//	// EditableMesh mesh = Win32::LoadOBJModel(file_name, scale);
-	//	FileResult file = PlatformLoadFile(file_name);
-	//	EditableMesh mesh = OBJParseModel(file, file_name, scale);
-	//	// AABB bounding_box = mesh.CalculateBoundingBox();
-	//	ModelResult sphere_mesh = mesh.ConvertToPNTFormat();
-	//	MeshInstance inst = CreateMesh(sphere_mesh.vertices, sphere_mesh.vertex_size,
-	//		sphere_mesh.stride, sphere_mesh.indices, sphere_mesh.index_count);
-
-	//	FreeModel(&sphere_mesh);
-	//	PlatformFreeFile(&file);
-	//	mesh.Free();
-
-	//	return inst;
-	//}
-
-	MeshInstance DirectXImmediateRenderer::CreateMesh(EditableMesh &mesh)
-	{
-		ModelResult sphere_mesh = mesh.ConvertToPNTFormat();
-
-		MeshInstance inst = CreateMesh(sphere_mesh.vertices.data(), sphere_mesh.vertex_size,
-			sphere_mesh.stride, sphere_mesh.indices.data(), sphere_mesh.index_count);
-
-		return inst;
-	}
-
-	MeshInstance DirectXImmediateRenderer::CreateMesh(real32 *vertex_data, uint32 vertex_size,
-		uint32 vertex_stride_bytes, uint32 *index_data, uint32 index_count)
-	{
-		D3D11_BUFFER_DESC vertex_desc = {};
-		vertex_desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-		vertex_desc.Usage = D3D11_USAGE_DEFAULT;
-		vertex_desc.CPUAccessFlags = 0;
-		vertex_desc.MiscFlags = 0;
-		vertex_desc.ByteWidth = vertex_size * sizeof(real32);
-		vertex_desc.StructureByteStride = vertex_stride_bytes;
-
-		D3D11_SUBRESOURCE_DATA vertex_res = {};
-		vertex_res.pSysMem = vertex_data;
-
-		D3D11_BUFFER_DESC index_desc = {};
-		index_desc.BindFlags = D3D11_BIND_INDEX_BUFFER;
-		index_desc.Usage = D3D11_USAGE_DEFAULT;
-		index_desc.CPUAccessFlags = 0;
-		index_desc.MiscFlags = 0;
-		index_desc.ByteWidth = index_count * sizeof(uint32);
-		index_desc.StructureByteStride = sizeof(uint32);
-
-		D3D11_SUBRESOURCE_DATA index_res = {};
-		index_res.pSysMem = index_data;
-
-		DXMesh mesh;
-		mesh.index_count = index_count;
-		mesh.stride_bytes = vertex_stride_bytes;
-		mesh.vertex_size = vertex_size;
-		DXCHECK(device->CreateBuffer(&vertex_desc, &vertex_res, &mesh.vertex_buffer));
-		DXCHECK(device->CreateBuffer(&index_desc, &index_res, &mesh.index_buffer));
-
-		uint32 index = mesh_free_list.top(); mesh_free_list.pop();
-		mesh.index = index;
-
-		meshes[index] = mesh;
-
-		MeshInstance mesh_instance;
-		mesh_instance.index = index;
-
-		return mesh_instance;
-	}
-
-	Pipeline DirectXImmediateRenderer::CreatePipline(const String &vertex_dir, const String &pixel_dir)
-	{
-		Pipeline shader;
-
-		shader.vertex_file = Platform::LoadFile(vertex_dir);
-		shader.pixel_file = Platform::LoadFile(pixel_dir);
-
-		D3D11_INPUT_ELEMENT_DESC pos_desc = {};
-		pos_desc.SemanticName = "Position";
-		pos_desc.SemanticIndex = 0;
-		pos_desc.Format = DXGI_FORMAT_R32G32B32_FLOAT;
-		pos_desc.InputSlot = 0;
-		pos_desc.AlignedByteOffset = 0;
-		pos_desc.InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-		pos_desc.InstanceDataStepRate = 0;
-
-		D3D11_INPUT_ELEMENT_DESC nrm_desc = {};
-		nrm_desc.SemanticName = "Normal";
-		nrm_desc.SemanticIndex = 0;
-		nrm_desc.Format = DXGI_FORMAT_R32G32B32_FLOAT;
-		nrm_desc.InputSlot = 0;
-		nrm_desc.AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
-		nrm_desc.InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-		nrm_desc.InstanceDataStepRate = 0;
-
-		D3D11_INPUT_ELEMENT_DESC txc_desc = {};
-		txc_desc.SemanticName = "TexCord";
-		txc_desc.SemanticIndex = 0;
-		txc_desc.Format = DXGI_FORMAT_R32G32_FLOAT;
-		txc_desc.InputSlot = 0;
-		txc_desc.AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
-		txc_desc.InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-		txc_desc.InstanceDataStepRate = 0;
-
-		D3D11_INPUT_ELEMENT_DESC layouts[] = { pos_desc, nrm_desc, txc_desc };
-
-		DXCHECK(device->CreateInputLayout(layouts, 3, shader.vertex_file.data.data(), shader.vertex_file.data.size(), &shader.layout));
-
-		DXCHECK(device->CreateVertexShader(shader.vertex_file.data.data(), shader.vertex_file.data.size(), nullptr, &shader.vs_shader));
-		DXCHECK(device->CreatePixelShader(shader.pixel_file.data.data(), shader.pixel_file.data.size(), nullptr, &shader.ps_shader));
-
-		return shader;
-	}
-
-	//Texture DirectXImmediateRenderer::CreateTexture(const String &file_name)
-	//{
-	//	ImageResult image = Win32::LoadImage(file_name);
-	//	Texture texture = CreateTexture(image.width, image.height, image.channel_count, image.data);
-	//	Win32::FreeImage(&image);
-
-	//	return texture;
-	//}
-
-	Texture DirectXImmediateRenderer::CreateTexture(uint32 width, uint32 height, uint32 num_channels, uint8 *data)
-	{
-		struct Colour
-		{
-			uint8 r;
-			uint8 g;
-			uint8 b;
-			uint8 a;
-		};
-
-		// Colour c;
-		// c.r = 255;
-		// c.g = 0;
-		// c.b = 0;
-		// c.a = 0;
-
-		// width = 1;
-		// height = 1;
-
-		D3D11_TEXTURE2D_DESC desc = {};
-		desc.Width = width;
-		desc.Height = height;
-		desc.MipLevels = 1;
-		desc.ArraySize = 1;
-		desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; //DXGI_FORMAT_B8G8R8A8_UNORM;
-		desc.SampleDesc.Count = 1;
-		desc.SampleDesc.Quality = 0;
-		desc.Usage = D3D11_USAGE_DEFAULT;
-		desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-		desc.CPUAccessFlags = 0;
-		desc.MiscFlags = 0;
-
-		D3D11_SUBRESOURCE_DATA sd = {};
-		sd.pSysMem = data;
-		sd.SysMemPitch = width * sizeof(uint8) * num_channels;
-
-		ID3D11Texture2D *texture = nullptr;
-		DXCHECK(device->CreateTexture2D(&desc, &sd, &texture));
-
-		D3D11_SHADER_RESOURCE_VIEW_DESC view_desc = {};
-		view_desc.Format = desc.Format;
-		view_desc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-		view_desc.Texture2D.MostDetailedMip = 0;
-		view_desc.Texture2D.MipLevels = 1;
-
-		ID3D11ShaderResourceView *view = nullptr;
-		DXCHECK(device->CreateShaderResourceView(texture, &view_desc, &view));
-
-		ID3D11SamplerState *sampler = nullptr;
-		D3D11_SAMPLER_DESC sam_desc = {};
-		sam_desc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-		sam_desc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
-		sam_desc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-		sam_desc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-
-		DXCHECK(device->CreateSamplerState(&sam_desc, &sampler));
-
-		Texture result;
-		result.texture = texture;
-		result.sampler = sampler;
-		result.view = view;
-
-		return result;
-	}
-
-	void DirectXImmediateRenderer::FreeTexture(Texture *texture)
-	{
-		if (texture->view)
-		{
-			DXRELEASE(texture->view);
-		}
-		if (texture->texture)
-		{
-			DXRELEASE(texture->texture);
-		}
-		if (texture->sampler)
-		{
-			DXRELEASE(texture->sampler);
-		}
-	}
-
-	void DirectXImmediateRenderer::FreeMesh(MeshInstance instance)
-	{
-		uint32 index = instance.index;
-		DXMesh *mesh = &meshes[index];
-
-		if (mesh->IsValid())
-		{
-			if (mesh->index == index)
-			{
-				DXRELEASE(mesh->vertex_buffer);
-				DXRELEASE(mesh->index_buffer);
-				mesh->index = UINT32_MAX;
-				mesh->stride_bytes = UINT32_MAX;
-				mesh->index_count = UINT16_MAX;
-
-				mesh_free_list.push(index);
-			}
-			else
-			{
-				// @NOTE: This probably shoudn't crash anything.
-				ASSERT(0, "Nope it's gone, freeing a mesh that has already been freed");
-			}
-		}
-		else
-		{
-			// @NOTE: This probably shoudn't crash anything.
-			ASSERT(0, "Nope it's gone, freeing a mesh that has already been freed");
-		}
-	}
-
-	void DirectXImmediateRenderer::RenderMesh(const MeshInstance &mesh_instance, const Transform &transform)
-	{
-		if (mesh_instance.IsOnGPU())
-		{
-			Mat4f m = transform.CalculateTransformMatrix();
-
-			Mat4f const_buffer_data[2];
-			const_buffer_data[0] = m * view_matrix * projection_matrix;
-			const_buffer_data[1] = Inverse(m);
-
-			const_buffer_data[0] = Transpose(const_buffer_data[0]);
-			const_buffer_data[1] = Transpose(const_buffer_data[1]);
-
-			//D3D11_MAPPED_SUBRESOURCE map = {};
-			//DXCHECK(context->Map(const_buffer, 0, D3D11_MAP_WRITE, 0, &map));
-
-			DXINFO(context->UpdateSubresource(const_buffer, 0, nullptr, const_buffer_data, 0, 0));
-
-			RECT rect;
-			GetClientRect(window, &rect);
-
-			real32 window_width = (real32)(rect.right - rect.left);
-			real32 window_height = (real32)(rect.bottom - rect.top);
-
-			D3D11_VIEWPORT viewport;
-			viewport.Width = window_width;
-			viewport.Height = window_height;
-			viewport.MinDepth = 0;
-			viewport.MaxDepth = 1;
-			viewport.TopLeftX = 0;
-			viewport.TopLeftY = 0;
-
-
-			DXMesh *mesh = GraphicsContext::mesh_areana.Get(mesh_instance.graphics_table_index);
-
-			if (mesh->IsValid())
-			{
-				DXINFO(context->VSSetShader(shader.vs_shader, nullptr, 0));
-				DXINFO(context->PSSetShader(shader.ps_shader, nullptr, 0));
-
-				DXINFO(context->VSSetConstantBuffers(0, 1, &const_buffer));
-
-				uint32 offset = 0;
-				DXINFO(context->IASetVertexBuffers(0, 1, &mesh->vertex_buffer, &mesh->stride_bytes, &offset));
-
-				DXINFO(context->IASetIndexBuffer(mesh->index_buffer, DXGI_FORMAT_R32_UINT, 0));
-
-				DXINFO(context->IASetInputLayout(shader.layout));
-
-				DXINFO(context->RSSetViewports(1, &viewport));
-
-				DXINFO(context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST));
-
-				DXINFO(context->OMSetRenderTargets(1, &render_target, depth_target));
-
-				DXINFO(context->DrawIndexed(mesh->index_count, 0, 0));
-			}
-		}
-	}
-
-
-
-	void DirectXImmediateRenderer::LOGGPUCards()
-	{
-		IDXGIFactory *factory = nullptr;
-		DXCHECK(CreateDXGIFactory(__uuidof(IDXGIFactory), (void **)&factory));
-
-		IDXGIAdapter *adapter = nullptr;
-
-		uint32 index = 0;
-		factory->EnumAdapters(index, &adapter);
-
-		// while(SUCCEEDED())
-		// {
-		//     DXGI_ADAPTER_DESC desc = {};
-		//     adapter->GetDesc(&desc);
-		//     index++;
-		// }
-
-		index = 0;
-		IDXGIOutput *output = nullptr;
-		adapter->EnumOutputs(index, &output);
-		// while (SUCCEEDED(adapter->EnumOutputs(index, &output)))
-		// {
-		//     DXGI_OUTPUT_DESC desc = {};
-		//     output->GetDesc(&desc);
-		//     index++;
-		// }
-
-		uint32 modes_count = 0;
-		DXCHECK(output->GetDisplayModeList(DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_ENUM_MODES_INTERLACED, &modes_count, NULL));
-
-		DXGI_MODE_DESC *modes = new DXGI_MODE_DESC[modes_count];
-		output->GetDisplayModeList(DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_ENUM_MODES_INTERLACED, &modes_count, modes);
-
-		//DXGI_OUTPUT_DESC desc = {};
-		//output->GetDesc(&desc);
-		// LOG(desc.DeviceName);
-		for (int32 i = 0; i < (int32)modes_count; i++)
-		{
-			DXGI_MODE_DESC mode = modes[i];
-
-			if (mode.Width == (unsigned int)1280)
-			{
-				int b = 1;
-				if (mode.Height == (unsigned int)720)
-				{
-					int a = 2;
-					//numerator = displayModeList[i].RefreshRate.Numerator;
-					//denominator = displayModeList[i].RefreshRate.Denominator;
-				}
-			}
-		}
-	}
-
-	void DirectXImmediateRenderer::ClearBuffer(const Vec4f &colour)
-	{
-		context->ClearRenderTargetView(render_target, colour.ptr);
-		context->ClearDepthStencilView(depth_target, D3D11_CLEAR_DEPTH, 1.0f, 0);
-	}
-
-	void DirectXImmediateRenderer::EndFrame()
-	{
-		swapchain->Present(1, 0);
-	}
-
-	void DirectXImmediateRenderer::CreateDevice()
-	{
-		D3D11_BUFFER_DESC cdc = {};
-		cdc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		cdc.Usage = D3D11_USAGE_DEFAULT; //D3D11_USAGE_DYNAMIC;
-		cdc.CPUAccessFlags = 0;
-		cdc.MiscFlags = 0;
-		cdc.ByteWidth = (uint32)(sizeof(Mat4f) * 2.0f);
-		cdc.StructureByteStride = 0;
-		D3D11_SUBRESOURCE_DATA cdc_sub = {};
-		Mat4f dummy[] = { Mat4f(1), Mat4f(1) };
-		cdc_sub.pSysMem = dummy;
-
-		DXCHECK(device->CreateBuffer(&cdc, &cdc_sub, &const_buffer));
-	}
-
-	void DirectXImmediateRenderer::CreateArrays()
-	{
-		meshes.resize(total_mesh_count);
-		for (uint32 i = 0; i < total_mesh_count; i++)
-		{
-			mesh_free_list.push(total_mesh_count - i - 1);
-		}
 	}
 
 	void WorldRenderer::RenderMesh(const MeshInstance &mesh_instance, const Material &material, const Transform &transform)
@@ -990,6 +585,7 @@ namespace cm
 	}
 
 	WorldRenderer::WorldRenderer(GraphicsContext *graphics_context)
+		: gc(graphics_context)
 	{
 		// @TODO: Clean up
 
@@ -1006,7 +602,7 @@ namespace cm
 		Mat4f dummy[] = { Mat4f(1), Mat4f(1) };
 		cdc_sub.pSysMem = dummy;
 
-		DXCHECK(graphics_context->device->CreateBuffer(&cdc, &cdc_sub, &uniform_buffer));
+		DXCHECK(gc->device->CreateBuffer(&cdc, &cdc_sub, &uniform_buffer));
 
 		// @TODO: Use platform
 		RECT rect;
