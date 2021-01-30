@@ -5,6 +5,9 @@
 #include "src/math/CosmicMath.h"
 #include "src/math/CosmicGeometry.h"
 
+#include "src/serialization/Assets.h"
+
+
 namespace cm
 {
 	class XMLAttribute
@@ -99,18 +102,6 @@ namespace cm
 		DAE
 	};
 
-	struct MeshMetaData
-	{
-		String name;
-		String path;
-		real32 base_scale;
-		int32 face_count;
-		int32 position_count;
-		int32 normal_count;
-		int32 tcoords_count;
-		AABB bounding_box;
-	};
-
 	class EditableMesh
 	{
 	public:
@@ -139,23 +130,12 @@ namespace cm
 		void ParseOBJ(const FileResult &file_result, const MeshMetaData &meta_data);
 
 	};
-	enum class TextureFileFormat
-	{
-		INVALID,
-		PNG,
-		JPG,
-		BMP
-	};
 
 	class EditableTexture
 	{
 	public:
-		int32 width;
-		int32 height;
-		int32 channel_count;
-		TextureFileFormat file_format;
-
 		String path;
+		TextureMetaData meta_data;
 		std::vector<uint8> pixel_data;
 		//std::vector<uint8> srgb_data;
 
@@ -165,8 +145,25 @@ namespace cm
 
 	};
 
+	class EditableShader
+	{
+	public:
+		String name; // @TODO: Full these out
+		String path; // @TODO: Full these out
+
+		FileResult vertex_file;
+		FileResult pixel_file;
+
+	public:
+		EditableShader();
+		EditableShader(const FileResult &vertex_file, const FileResult &pixel_file);
+		~EditableShader();
+
+	};
+
 	class Serializer
 	{
+
 
 	};
 

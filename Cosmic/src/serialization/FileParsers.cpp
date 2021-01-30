@@ -605,12 +605,14 @@ namespace cm
 
 	EditableTexture::EditableTexture(const FileResult &file)
 	{
-		uint8 *data = stbi_load_from_memory((stbi_uc*)file.data.data(), (int32)file.data.size(), &width, &height, &channel_count, 4);
+		uint8 *data = stbi_load_from_memory((stbi_uc*)file.data.data(), (int32)file.data.size(), &meta_data.width, &meta_data.height, &meta_data.channel_count, 4);
 		ASSERT(data, "Cannot find image: " + file.path);
 
-		channel_count = 4;
+		meta_data.channel_count = 4;						// @HACK
+		meta_data.file_type = TextureFileType::PNG;			// @HACK
+		meta_data.format = TextureFormat::R8G8B8A8_UNORM;	// @HACK
 
-		uint32 size = static_cast<uint32>(width * height * channel_count);
+		uint32 size = static_cast<uint32>(meta_data.width * meta_data.height * meta_data.channel_count);
 		this->pixel_data.assign(data, data + size);
 	}
 
@@ -618,4 +620,21 @@ namespace cm
 	{
 
 	}
+
+	EditableShader::EditableShader(const FileResult &vertex_file, const FileResult &pixel_file)
+		: vertex_file(vertex_file), pixel_file(pixel_file)
+	{
+
+	}
+
+	EditableShader::EditableShader()
+	{
+
+	}
+
+	EditableShader::~EditableShader()
+	{
+
+	}
+
 } // namespace cm

@@ -6,13 +6,11 @@
 #include <dxgidebug.h>
 
 #include "Renderer.h"
-#include "src/serialization/FileParsers.h"
+#include "src/core/World.h"
 #include "src/util/MemoryAreana.h"
 
 namespace cm
 {
-#define testingssss
-#ifdef testingssss
 #define DXCHECK(call)                                                                                                   \
     {                                                                                                                   \
         debugger.Set();                                                                                                 \
@@ -52,9 +50,7 @@ namespace cm
             Platform::ErrorBox(ss.str());                       \
         }                                                    \
     }
-#else
-#define DXCHECK(call) (call);
-#endif
+
 #define DXRELEASE(object)  \
     if ((object))          \
     {                      \
@@ -76,18 +72,6 @@ namespace cm
 	private:
 		uint64 next = 0u;
 		struct IDXGIInfoQueue *info_queue = nullptr;
-	};
-
-	struct RenderingState
-	{
-		ID3D11Device *device;
-		ID3D11DeviceContext *context;
-		IDXGISwapChain *swapchain;
-		ID3D11RenderTargetView *render_target;
-		ID3D11DepthStencilView *depth_target;
-
-		DirectXDebug debugger;
-		HWND window;
 	};
 
 	class Texture
@@ -114,6 +98,7 @@ namespace cm
 	};
 
 
+	class GraphicsContext;
 
 	class DXMesh
 	{
@@ -121,7 +106,7 @@ namespace cm
 		friend class DirectXImmediateRenderer;
 
 	public:
-		uint32 index = UINT32_MAX;
+		uint32 index = UINT32_MAX; // @TODO: Remove
 		uint32 stride_bytes = UINT32_MAX;
 		uint32 index_count = UINT32_MAX;
 		uint32 vertex_size = UINT32_MAX;
@@ -131,12 +116,54 @@ namespace cm
 	public:
 		inline bool IsValid() { return vertex_buffer && index_buffer; }
 
-		~DXMesh();
+		void Bind(GraphicsContext *gc) const;
 
 	public:
+
 		DXMesh();
+		~DXMesh();
 	};
 
+	class DXShader
+	{
+		friend class GraphicsContext;
+		friend class DirectXImmediateRenderer;
+
+	public:
+		ID3D11VertexShader *vs_shader = nullptr;
+		ID3D11PixelShader *ps_shader = nullptr;
+		ID3D11InputLayout *layout = nullptr;
+
+	public:
+		void Bind(GraphicsContext *gc) const;
+
+	public:
+		DXShader();
+		~DXShader();
+	};
+
+	class DXTexture
+	{
+		friend class GraphicsContext;
+		friend class DirectXImmediateRenderer;
+
+	public:
+		ID3D11Texture2D *texture = nullptr;
+		ID3D11ShaderResourceView *view = nullptr;
+		ID3D11SamplerState *sampler = nullptr;
+
+	public:
+		void Bind(GraphicsContext *gc, int32 register_index) const;
+
+	public:
+		DXTexture();
+		~DXTexture();
+	};
+
+	class DXConstBuffer
+	{
+
+	};
 
 	class GraphicsContext
 	{
@@ -145,12 +172,13 @@ namespace cm
 		void Destroy();
 
 		void CreateMesh(MeshInstance *instance, EditableMesh *editable_mesh);
-		ShaderInstance CreateShader(const String &path);
-		TextureInstance CreateTexture(const TextureInstance &texture);
+		void CreateShader(ShaderInstance *instance, EditableShader *editable_shader);
+		void CreateTexture(TextureInstance *instance, EditableTexture *edtiable_texture);
 
 	public:
 		inline static ID3D11Device *device = nullptr;
 		inline static ID3D11DeviceContext *context = nullptr;
+
 		inline static IDXGISwapChain *swapchain = nullptr;
 		inline static ID3D11RenderTargetView *render_target = nullptr;
 		inline static ID3D11DepthStencilView *depth_target = nullptr;
@@ -159,6 +187,10 @@ namespace cm
 		inline static HWND window;
 
 		inline static MemoryAreana<DXMesh> mesh_areana;
+		inline static MemoryAreana<DXShader> shader_areana;
+		inline static MemoryAreana<DXTexture> texture_areana;
+
+		inline static const int32 total_texture_resigters = 8;
 
 	public:
 		GraphicsContext();
@@ -171,6 +203,33 @@ namespace cm
 		int32 CreateMesh(real32 *vertex_data, uint32 vertex_size, uint32 vertex_stride_bytes,
 			uint32 *index_data, uint32 index_count);
 	};
+
+	class WorldRenderer
+	{
+	public:
+		void RenderWorld(World *world);
+		void RenderMesh(const MeshInstance &mesh_instance, const Material &material, const Transform &transform);
+
+		void SetMatrices(const Mat4f &view, const Mat4f &proj);
+
+	public:
+		WorldRenderer(GraphicsContext *graphics_context);
+		WorldRenderer(const WorldRenderer &) = delete;
+		WorldRenderer &operator=(const WorldRenderer &) = delete;
+		~WorldRenderer();
+
+	private:
+		GraphicsContext *gc;
+
+		ID3D11Buffer *uniform_buffer = nullptr;
+
+		D3D11_VIEWPORT viewport;
+
+		Mat4f view_matrix;
+		Mat4f projection_matrix;
+
+	};
+
 
 	class DirectXDebugRenderer : public GraphicsContext//, DebugRenderer
 	{
@@ -225,13 +284,11 @@ namespace cm
 
 		Pipeline CreatePipline(const String &vertex_dir, const String &pixel_dir);
 
-		Texture CreateTexture(const String &file_name);
 		Texture CreateTexture(uint32 width, uint32 height, uint32 num_channels, uint8 *data);
 		void FreeTexture(Texture *texture);
 
 		void ClearBuffer(const Vec4f &colour);
 		void RenderMesh(const MeshInstance &mesh_instance, const Transform &transform);
-		void RenderQuad(const MeshInstance &mesh_instance, const Mat4f &transform);
 		void EndFrame();
 
 	public:

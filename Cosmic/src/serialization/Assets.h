@@ -1,94 +1,93 @@
 #pragma once
 #include "src/Cosmic.h"
 #include "src/math/CosmicMath.h"
-#include "src/rendering/Renderer.h"
-#include "src/serialization/FileParsers.h"
-#include "src/core/JobSystem.h"
+#include "src/math/CosmicGeometry.h"
 
 namespace cm
 {
-#define THREADED 1
-
-	template<typename T>
-	struct ThreadedResult
+	struct MeshMetaData
 	{
-		bool valid;
-		T data;
+		String name;
+		real32 base_scale;
+		int32 face_count;
+		int32 position_count;
+		int32 normal_count;
+		int32 tcoords_count;
+		AABB bounding_box;
 	};
 
-	class AssetTable
+	class MeshInstance
 	{
 	public:
+		MeshMetaData meta_data;
+		int32 asset_table_index = -1;
+		int32 graphics_table_index = -1;
 
-		std::vector<MeshInstance> mesh_intances;				// @TODO: Pre reserve this!!
-		std::vector<EditableMesh> editable_meshes;				// @TODO: Pre reserve this!!
+		int32 index = -1;
 
-
-		//************************************
-		//
-		//************************************
-
-
-		AssetTable() {};
-		~AssetTable() {};
+		inline bool IsOnGPU() const { return graphics_table_index >= 0; }
 
 	public:
-		//************************************
-		// @NOTE: Asssumes the mesh is valid and is there
-		// @NOTE: This method blocks if locked
-		//************************************
-		EditableMesh GetEditableMesh(const MeshInstance &instance);
+		MeshInstance() {}
+		~MeshInstance() {}
 
-
-		//************************************
-		// @NOTE: Is garuateed to be there with no blocking becaue we load this on main ahead of time
-		// @Speed: O(n) as we have to loop through everything. Could make this faster with hash map
-		//************************************
-		MeshInstance FindMeshInstance(const String &name);
 	};
 
 
-	class ModelLoadJob : public JobWork
+	enum class TextureFileType
 	{
-	public:
-		virtual void Process() override;
+		INVALID,
+		PNG,
+		JPG,
+		BMP
+	};
 
-	public:
-		ModelLoadJob(const FileResult &file_result, const MeshInstance &mesh_instance, AssetTable *asset_table);
-		~ModelLoadJob();
-
-	private:
-		AssetTable *asset_table;
-		FileResult mesh_file;
-		MeshInstance mesh_instance;
+	enum class TextureFormat
+	{
+		R8G8B8A8_UNORM,
 
 	};
 
-	class AssetLoader
+	struct TextureMetaData
+	{
+		TextureFormat format;
+		TextureFileType file_type;
+		int32 width;
+		int32 height;
+		int32 channel_count;
+	};
+
+	class TextureInstance
 	{
 	public:
-		void LoadTexture(const String &path);
-		void LoadModel(const String &path);
-		void LoadEntireFolderOfModels(const String &path);
-		void LoadEnitreFolderOfTextures(const String &path);
+		TextureMetaData meta_data;
 
-	public:
-		AssetLoader(AssetTable *asset_table, const String &resource_path);
-		~AssetLoader();
-
-	private:
-		String resource_path;
-		AssetTable *asset_table;
-
-		std::thread worker;
-		std::list<ModelLoadJob> model_jobs;
-		//std::queue<String> load_queue;
-
-		inline static AssetLoader *instance = nullptr;
-
-	private:
-		void DoLoadEntireFolderOfModels(FolderResult mesh_folder);
-		void ParseModel(const FileResult &mesh_file, const MeshInstance &mesh_instance);
-		void Preprocess();
+		int32 asset_table_index = -1;
+		int32 graphics_table_index = -1;
 	};
+
+
+	struct ShaderMetaData
+	{
+		String path;
+		FileResult vertex_file;
+		FileResult pixel_file;
+	};
+
+	class ShaderInstance
+	{
+	public:
+		ShaderMetaData meta_data;
+
+		int32 asset_table_index = -1;
+		int32 graphics_table_index = -1;
+	};
+
+	struct Material
+	{
+		ShaderInstance shader;
+		std::vector<TextureInstance> textures;
+	};
+
+
 }

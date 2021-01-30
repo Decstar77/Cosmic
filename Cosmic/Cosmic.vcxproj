@@ -121,6 +121,7 @@
     <ClInclude Include="src\core\entities\Particles.h" />
     <ClInclude Include="src\core\JobSystem.h" />
     <ClInclude Include="src\generated\IntrospectedEntity.h" />
+    <ClInclude Include="src\serialization\AssetTable.h" />
     <ClInclude Include="src\util\BlockingQueue.h" />
     <ClInclude Include="src\core\SoundSystem.h" />
     <ClInclude Include="src\core\entities\components\NavMesh.h" />
@@ -168,6 +169,7 @@
     <ClCompile Include="src\core\entities\Particles.cpp" />
     <ClCompile Include="src\core\Grid.cpp" />
     <ClCompile Include="src\core\JobSystem.cpp" />
+    <ClCompile Include="src\serialization\AssetTable.cpp" />
     <ClCompile Include="src\util\BlockingQueue.cpp" />
     <ClCompile Include="src\core\SoundSystem.cpp" />
     <ClCompile Include="src\core\entities\components\NavMesh.cpp" />

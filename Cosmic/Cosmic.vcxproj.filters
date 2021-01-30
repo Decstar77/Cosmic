@@ -152,6 +152,9 @@
     <ClInclude Include="src\util\MemoryAreana.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\serialization\AssetTable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Main.cpp">
@@ -254,6 +257,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\core\Grid.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\serialization\AssetTable.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

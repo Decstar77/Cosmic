@@ -1,7 +1,7 @@
 #pragma once
 #include "src/core/Grid.h"
 #include "entities/Entity.h"
-#include "src/serialization/Assets.h"
+#include "src/serialization/AssetTable.h"
 #include "Physics.h"
 #include "Player.h"
 #include "entities/Environment.h"

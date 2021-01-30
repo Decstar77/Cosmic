@@ -4,6 +4,7 @@
 #include "src/math/CosmicGeometry.h"
 
 #include "src/rendering/Renderer.h"
+#include "src/serialization/Assets.h"
 
 namespace cm
 {

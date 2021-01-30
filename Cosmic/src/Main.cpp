@@ -36,6 +36,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		graphics_context->InitializeDirectX(window->GetHandle());
 
 		std::unique_ptr<DirectXImmediateRenderer> renderer = std::make_unique<DirectXImmediateRenderer>(window->GetHandle());
+		std::unique_ptr<WorldRenderer> world_renderer = std::make_unique<WorldRenderer>(graphics_context.get());
 
 		// @TODO: Debug removal
 		std::unique_ptr<DirectXDebugRenderer> debug_renderer = std::make_unique<DirectXDebugRenderer>();
@@ -45,7 +46,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		std::unique_ptr<JobSystem> job_system = std::make_unique<JobSystem>(); // @TODO: Remove singloton
 
 		std::unique_ptr<AssetTable> asset_table = std::make_unique<AssetTable>();
-		std::unique_ptr<AssetLoader> asset_loader = std::make_unique<AssetLoader>(asset_table.get(), "../res"); // @TODO: Remove singloton
+		std::unique_ptr<AssetLoader> asset_loader = std::make_unique<AssetLoader>(asset_table.get(), "../res");
 
 		std::unique_ptr<SoundSystem> sound_system = std::make_unique<SoundSystem>(); // @TODO: Remove singloton
 
@@ -68,6 +69,16 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 			graphics_context->CreateMesh(&mesh, editable_mesh);
 		}
 
+		asset_loader->LoadShader("t.vert.cso", "t.pixl.cso");
+		graphics_context->CreateShader(&asset_table->shader_instances.at(0), &asset_table->editable_shaders.at(0));
+
+		asset_loader->LoadTexture("../res/PolygonScifi_01_A.png");
+		graphics_context->CreateTexture(&asset_table->texture_instances.at(0), &asset_table->editable_textures.at(0));
+
+		Material material;
+		material.shader = asset_table->shader_instances.at(0);
+		material.textures.push_back(asset_table->texture_instances.at(0));
+
 		std::unique_ptr<World> world = std::make_unique<World>();
 		//std::unique_ptr<WorldRenderer> world_renderer = std::make_unique<WorldRenderer>();
 
@@ -78,7 +89,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 
 		FileResult text_file = Platform::LoadFile("../res/PolygonScifi_01_A.png");
 		EditableTexture texture = EditableTexture(text_file);
-		Texture t = renderer->CreateTexture(texture.width, texture.height, texture.channel_count, texture.pixel_data.data());
+		Texture t = renderer->CreateTexture(texture.meta_data.width, texture.meta_data.height, texture.meta_data.channel_count, texture.pixel_data.data());
 
 		renderer->SetTexture(t);
 
@@ -154,6 +165,8 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 			renderer->SetMatrices(Camera::GetActiveCamera()->CalculateViewMatrix(), Camera::GetActiveCamera()->CalculateProjectionMatrix());
 			renderer->ClearBuffer(Vec4f(0.45f, 0.65f, 0.85f, 1.0f));
 
+			world_renderer->SetMatrices(Camera::GetActiveCamera()->CalculateViewMatrix(),
+				Camera::GetActiveCamera()->CalculateProjectionMatrix());
 
 			std::vector<Entity *> renderable_entities = world->CreateCollection([](Entity *entity) {
 				return entity->active && entity->should_draw && entity->GetMesh().IsOnGPU();
@@ -162,12 +175,17 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 			for (GridCell &cell : world->grid.cells)
 			{
 				if (!cell.empty)
-					renderer->RenderMesh(asset_table->FindMeshInstance("cube"), Transform(cell.center));
+				{
+					//renderer->RenderMesh(asset_table->FindMeshInstance("cube"), Transform(cell.center));
+					world_renderer->RenderMesh(asset_table->FindMeshInstance("cube"), material, Transform(cell.center));
+				}
 			}
 
 			for (Entity *entity : renderable_entities)
 			{
-				renderer->RenderMesh(entity->GetMesh(), entity->GetGlobalTransform());
+				world_renderer->RenderMesh(entity->GetMesh(), material, entity->GetGlobalTransform());
+
+				//renderer->RenderMesh(entity->GetMesh(), entity->GetGlobalTransform());
 			}
 
 			//world_renderer->Render(world.get());
