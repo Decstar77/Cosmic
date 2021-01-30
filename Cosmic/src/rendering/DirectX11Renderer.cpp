@@ -59,17 +59,9 @@ namespace cm
 		return messages;
 	}
 
-	Pipeline::Pipeline()
-	{
-	}
-
-	Pipeline::~Pipeline()
-	{
-	}
-
 	void DXMesh::Bind(GraphicsContext *gc) const
 	{
-		DirectXDebug &debugger = gc->debugger; // @TODO: Remove
+		GETDEUBBGER();
 
 		uint32 offset = 0;
 		DXINFO(gc->context->IASetVertexBuffers(0, 1, &vertex_buffer, &stride_bytes, &offset));
@@ -170,8 +162,6 @@ namespace cm
 		depth_view_dsc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DMS;
 		depth_view_dsc.Texture2D.MipSlice = 0;
 		DXCHECK(device->CreateDepthStencilView(depth_texture, &depth_view_dsc, &depth_target));
-
-
 
 		ID3D11RasterizerState *rs_state = nullptr;
 		D3D11_RASTERIZER_DESC rs_desc = {};
@@ -389,7 +379,7 @@ namespace cm
 
 	void DirectXDebugRenderer::RenderAndFlush()
 	{
-		DirectXDebug &debugger = gc->debugger; // @TODO: Remove
+		GETDEUBBGER();
 
 		Mat4f const_buffer_data;
 		const_buffer_data = view_matrix * projection_matrix;
@@ -456,7 +446,7 @@ namespace cm
 
 	void DirectXDebugRenderer::CreateVertexBuffer()
 	{
-		DirectXDebug &debugger = gc->debugger; // @TODO: Remove
+		GETDEUBBGER();
 
 		D3D11_BUFFER_DESC vertex_desc = {};
 		vertex_desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
@@ -474,7 +464,7 @@ namespace cm
 
 	void DirectXDebugRenderer::CreateConstBuffer()
 	{
-		DirectXDebug &debugger = gc->debugger; // @TODO: Remove
+		GETDEUBBGER();
 
 		D3D11_BUFFER_DESC cdc = {};
 		cdc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
@@ -519,7 +509,7 @@ namespace cm
 	{
 		// @TODO: Error checking
 
-		DirectXDebug &debugger = gc->debugger; // @TODO: Remove
+		GETDEUBBGER();
 
 		//////////////////////////////////
 		//////////////////////////////////
@@ -589,7 +579,7 @@ namespace cm
 	{
 		// @TODO: Clean up
 
-		DirectXDebug &debugger = gc->debugger; // @TODO: Remove
+		GETDEUBBGER();
 
 		D3D11_BUFFER_DESC cdc = {};
 		cdc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
@@ -626,7 +616,7 @@ namespace cm
 
 	void DXShader::Bind(GraphicsContext *gc) const
 	{
-		DirectXDebug &debugger = gc->debugger; // @TODO: Remove
+		GETDEUBBGER();
 
 		DXINFO(gc->context->VSSetShader(vs_shader, nullptr, 0));
 		DXINFO(gc->context->PSSetShader(ps_shader, nullptr, 0));
@@ -645,7 +635,7 @@ namespace cm
 
 	void DXTexture::Bind(GraphicsContext *gc, int32 register_index) const
 	{
-		DirectXDebug &debugger = gc->debugger; // @TODO: Remove
+		GETDEUBBGER();
 
 		DXINFO(gc->context->PSSetShaderResources(register_index, 1, &view));
 		DXINFO(gc->context->PSSetSamplers(register_index, 1, &sampler));

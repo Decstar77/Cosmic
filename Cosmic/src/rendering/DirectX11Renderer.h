@@ -11,6 +11,8 @@
 
 namespace cm
 {
+#define GETDEUBBGER() DirectXDebug &debugger = gc->debugger;
+
 #define DXCHECK(call)                                                                                                   \
     {                                                                                                                   \
         debugger.Set();                                                                                                 \
@@ -81,22 +83,6 @@ namespace cm
 		ID3D11ShaderResourceView *view = nullptr;
 		ID3D11SamplerState *sampler = nullptr;
 	};
-
-	class Pipeline
-	{
-	public:
-		uint32 index;
-		FileResult vertex_file;
-		ID3D11PixelShader *ps_shader;
-		FileResult pixel_file;
-		ID3D11VertexShader *vs_shader;
-		ID3D11InputLayout *layout = nullptr;
-
-	public:
-		Pipeline();
-		~Pipeline();
-	};
-
 
 	class GraphicsContext;
 
