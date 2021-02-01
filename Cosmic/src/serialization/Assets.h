@@ -26,6 +26,7 @@ namespace cm
 		int32 index = -1;
 
 		inline bool IsOnGPU() const { return graphics_table_index >= 0; }
+		inline bool IsValid() const { return asset_table_index >= 0; }
 
 	public:
 		MeshInstance() {}

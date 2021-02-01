@@ -14,6 +14,10 @@ namespace cm
 		real32 max_speed = 10.0f;		// @Display
 		real32 banking_angle = 25.0f;	// @Display
 
+		real32 health = 100.f;	// @Display
+		real32 ammo = 10.0f;	// @Display
+		real32 weight = 3.0f;	// @Display
+
 		void Movement(const real32 &dt);
 		void Banking(const real32 dt);
 		void Rotating(const real32 &dt);

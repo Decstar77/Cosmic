@@ -1,6 +1,8 @@
 #pragma once
 #include "src/core/Grid.h"
 #include "entities/Entity.h"
+#include "entities/Light.h"
+
 #include "src/serialization/AssetTable.h"
 #include "Physics.h"
 #include "Player.h"
@@ -15,6 +17,8 @@ namespace cm
 		int32 id_counter;
 		std::array<std::unique_ptr<Entity>, 1000> entities;
 		std::queue<int32> freelist;
+
+		std::vector<int32> light_indices;
 
 		Grid grid;
 

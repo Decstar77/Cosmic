@@ -488,6 +488,22 @@ namespace cm
 							{
 								if (ImGui::MenuItem(lights[light]))
 								{
+									if (light == 0)
+									{
+										context->current_entity = GameState::GetActiveWorld()->
+											CreateEntity<DirectionalLight>()->CreateEntityReference();
+									}
+									else if (light == 1)
+									{
+										context->current_entity = GameState::GetActiveWorld()->
+											CreateEntity<SpotLight>()->CreateEntityReference();
+									}
+									else if (light == 2)
+									{
+										context->current_entity = GameState::GetActiveWorld()->
+											CreateEntity<PointLight>()->CreateEntityReference();
+									}
+
 									running = false;
 									result = true;
 								}
@@ -731,13 +747,15 @@ namespace cm
 
 				if (RaycastAABB(ray, bounding_box, &t))
 				{
-					//{
-					//	if (t < min)
-					//	{
-					//		min = t;
-					//		picked = entity;
-					//	}
-					//}
+					if (!entity->HasMesh())
+					{
+						if (t < min)
+						{
+							min = t;
+							picked = entity;
+						}
+					}
+					else
 					{
 						MeshCollider list = game_state->GetAssetTable()->GetEditableMesh(entity->GetMesh()).GetMeshCollider();
 

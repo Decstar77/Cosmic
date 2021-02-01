@@ -28,6 +28,8 @@ namespace cm
 			ENVIRONMENT,
 			CAMERA,
 			POINTLIGHT,
+			SPOTLIGHT,
+			DIRECTIONALLIGHT,
 			PLAYER,
 			ENEMY_DUDE,
 			TURRET,
@@ -99,7 +101,7 @@ namespace cm
 
 		Entity *GetParent() const;
 		Entity *GetFirstChild() const;
-		Entity *GetLastChild() const;
+		Entity *GetLastChild() const; // @TODO:
 		Entity *GetSibling() const;
 		std::vector<Entity*> GetChildren() const;
 
@@ -109,29 +111,34 @@ namespace cm
 
 		inline void SetOrientation(const Quatf &orientation) { this->transform.orientation = orientation; }
 		inline Quatf GetOrientation() const { return this->transform.orientation; }
+		Quatf GetGlobalOrientation() const; // @TODO:
 
 		inline void SetScale(const Vec3f &scale) { this->transform.scale = scale; }
 		inline Vec3f GetScale() const { return this->transform.scale; }
+		Vec3f GetGlobalScale() const; // @TODO:
 
 		inline void LookAt(const Vec3f &position) { this->transform.LookAtLH(position); }
 
 		inline void SetTransform(const Transform &transform) { this->transform = transform; }
-		inline Transform GetLocalTransform() const { return transform; }
 
+		inline Transform GetLocalTransform() const { return transform; }
 		Transform GetGlobalTransform() const;
 
 		Mat4f GetLocalTransformMatrix() const;
 		Mat4f GetGlobalTransformMatrix() const;
 
 		inline void SetBoundingBox(const AABB &box) { this->local_bounding_box = box; }
+
 		inline AABB GetLocalBoundingBox() const { return local_bounding_box; }
 		AABB GetGlobalBoundingBox() const;
 
+		// @NOTE: Compontent ?
 		inline bool HasCollider() { return local_collider.type != ColliderType::INVALID; }
 		inline void SetCollider(const Collider &collider) { this->local_collider = collider; }
 		inline Collider GetCollider() const { return local_collider; }
 		Collider GetGlobalCollider() const;
 
+		inline bool HasMesh() { return mesh.IsValid(); }
 		inline MeshInstance GetMesh() const { return mesh; }
 		void SetMesh(const MeshInstance &mesh);
 

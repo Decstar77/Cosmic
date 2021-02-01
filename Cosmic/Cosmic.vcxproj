@@ -115,12 +115,21 @@
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="src\rendering\BufferLayout.h" />
+    <ClInclude Include="src\rendering\DXDebug.h" />
+    <ClInclude Include="src\rendering\DXMesh.h" />
+    <ClInclude Include="src\core\entities\components\Component.h" />
     <ClInclude Include="src\core\entities\GameCamera.h" />
     <ClInclude Include="src\core\Grid.h" />
     <ClInclude Include="src\core\entities\Light.h" />
     <ClInclude Include="src\core\entities\Particles.h" />
     <ClInclude Include="src\core\JobSystem.h" />
     <ClInclude Include="src\generated\IntrospectedEntity.h" />
+    <ClInclude Include="src\rendering\DXConstantBuffer.h" />
+    <ClInclude Include="src\rendering\DirectX11.h" />
+    <ClInclude Include="src\rendering\DXShader.h" />
+    <ClInclude Include="src\rendering\DXTexture.h" />
+    <ClInclude Include="src\rendering\GraphicsContext.h" />
     <ClInclude Include="src\serialization\AssetTable.h" />
     <ClInclude Include="src\util\BlockingQueue.h" />
     <ClInclude Include="src\core\SoundSystem.h" />
@@ -165,10 +174,17 @@
     <ClInclude Include="src\core\World.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\rendering\BufferLayout.cpp" />
+    <ClCompile Include="src\rendering\DXConstantBuffer.cpp" />
+    <ClCompile Include="src\rendering\DXDebug.cpp" />
+    <ClCompile Include="src\rendering\DXMesh.cpp" />
     <ClCompile Include="src\core\entities\GameCamera.cpp" />
     <ClCompile Include="src\core\entities\Particles.cpp" />
     <ClCompile Include="src\core\Grid.cpp" />
     <ClCompile Include="src\core\JobSystem.cpp" />
+    <ClCompile Include="src\rendering\DXShader.cpp" />
+    <ClCompile Include="src\rendering\DXTexture.cpp" />
+    <ClCompile Include="src\rendering\GraphicsContext.cpp" />
     <ClCompile Include="src\serialization\AssetTable.cpp" />
     <ClCompile Include="src\util\BlockingQueue.cpp" />
     <ClCompile Include="src\core\SoundSystem.cpp" />
@@ -205,18 +221,26 @@
     <FxCompile Include="src\rendering\hlsl\debug_line.pixl.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)/res/complied_shaders/%(Filename).cso</ObjectFileOutput>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)/res/complied_shaders/%(Filename).cso</ObjectFileOutput>
     </FxCompile>
     <FxCompile Include="src\rendering\hlsl\debug_line.vert.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)/res/complied_shaders/%(Filename).cso</ObjectFileOutput>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)/res/complied_shaders/%(Filename).cso</ObjectFileOutput>
     </FxCompile>
-    <FxCompile Include="src\rendering\hlsl\t.pixl.hlsl">
+    <FxCompile Include="src\rendering\hlsl\basic_pbr.pixl.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)/res/complied_shaders/%(Filename).cso</ObjectFileOutput>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)/res/complied_shaders/%(Filename).cso</ObjectFileOutput>
     </FxCompile>
-    <FxCompile Include="src\rendering\hlsl\t.vert.hlsl">
+    <FxCompile Include="src\rendering\hlsl\basic_pbr.vert.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)/res/complied_shaders/%(Filename).cso</ObjectFileOutput>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)/res/complied_shaders/%(Filename).cso</ObjectFileOutput>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

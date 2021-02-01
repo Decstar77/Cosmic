@@ -34,6 +34,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 	{
 		std::unique_ptr<GraphicsContext> graphics_context = std::make_unique<GraphicsContext>();
 		graphics_context->InitializeDirectX(window->GetHandle());
+		graphics_context->LogGPUS();
 
 		std::unique_ptr<WorldRenderer> world_renderer = std::make_unique<WorldRenderer>(graphics_context.get());
 
@@ -68,20 +69,19 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 			graphics_context->CreateMesh(&mesh, editable_mesh);
 		}
 
-		asset_loader->LoadShader("t.vert.cso", "t.pixl.cso");
+		asset_loader->LoadShader("../res/complied_shaders/basic_pbr.vert.cso", "../res/complied_shaders/basic_pbr.pixl.cso");
 		graphics_context->CreateShader(&asset_table->shader_instances.at(0), &asset_table->editable_shaders.at(0));
 
-		asset_loader->LoadShader("debug_line.vert.cso", "debug_line.pixl.cso");
+		asset_loader->LoadShader("../res/complied_shaders/debug_line.vert.cso", "../res/complied_shaders/debug_line.pixl.cso");
 		graphics_context->CreateShader(&asset_table->shader_instances.at(1), &asset_table->editable_shaders.at(1));
 
 		asset_loader->LoadTexture("../res/PolygonScifi_01_A.png");
 		graphics_context->CreateTexture(&asset_table->texture_instances.at(0), &asset_table->editable_textures.at(0));
 
-		Material material;
-		material.shader = asset_table->shader_instances.at(0);
-		material.textures.push_back(asset_table->texture_instances.at(0));
+
 
 		std::unique_ptr<World> world = std::make_unique<World>();
+
 		//std::unique_ptr<WorldRenderer> world_renderer = std::make_unique<WorldRenderer>();
 
 		game_state.SetActiveWorld(world.get());
@@ -103,8 +103,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		GameCamera *game_cam = world->CreateEntity<GameCamera>();
 		Drone *drone = world->CreateEntity<Drone>();
 
-		world->CreateEntity<PointLight>();
-
+		world->CreateEntity<PointLight>()->SetPosition(Vec3f(10, 3, 5));
 
 		Clock clock;
 		clock.Start();
@@ -163,23 +162,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 			world_renderer->SetMatrices(Camera::GetActiveCamera()->CalculateViewMatrix(),
 				Camera::GetActiveCamera()->CalculateProjectionMatrix());
 
-			std::vector<Entity *> renderable_entities = world->CreateCollection([](Entity *entity) {
-				return entity->active && entity->should_draw && entity->GetMesh().IsOnGPU();
-			});
-
-			for (GridCell &cell : world->grid.cells)
-			{
-				if (!cell.empty)
-				{
-					world_renderer->RenderMesh(asset_table->FindMeshInstance("cube"), material, Transform(cell.center));
-				}
-			}
-
-			for (Entity *entity : renderable_entities)
-			{
-				world_renderer->RenderMesh(entity->GetMesh(), material, entity->GetGlobalTransform());
-			}
-
+			world_renderer->RenderWorld(world.get());
 			//world_renderer->Render(world.get());
 
 			debug_renderer->RenderAndFlush();

@@ -1,9 +1,12 @@
 #ifndef __DIRECTX11RENDERER_H__
 #define __DIRECTX11RENDERER_H__
 
-#include <d3d11.h>
-#include <dxgi.h>
-#include <dxgidebug.h>
+#include "DirectX11.h"
+
+#include "DXMesh.h"
+#include "DXShader.h"
+#include "DXTexture.h"
+#include "DXConstantBuffer.h"
 
 #include "Renderer.h"
 #include "src/core/World.h"
@@ -11,146 +14,6 @@
 
 namespace cm
 {
-#define GETDEUBBGER() DirectXDebug &debugger = gc->debugger;
-
-#define DXCHECK(call)                                                                                                   \
-    {                                                                                                                   \
-        debugger.Set();                                                                                                 \
-        HRESULT dxresult = (call);                                                                                      \
-        if (FAILED(dxresult))                                                                                           \
-        {                                                                                                               \
-            char *output = nullptr;                                                                                     \
-            FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_ALLOCATE_BUFFER, \
-                           NULL, dxresult, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&output, 0, NULL);         \
-            if (output)                                                                                                 \
-            {                                                                                                           \
-                std::vector<String> messages = debugger.GetMessages();                                                        \
-                for (int32 i = 0; i < messages.size(); i++)                                                             \
-                {                                                                                                       \
-                    LOG(messages[i])                                                                                    \
-                }                                                                                                       \
-                Platform::ErrorBox(output);                                                                                \
-            }                                                                                                           \
-        }                                                                                                               \
-    }
-
-#define DXINFO(call)                                         \
-    {                                                        \
-        debugger.Set();                                      \
-        (call);                                              \
-        std::vector<String> messages = debugger.GetMessages();     \
-        if (messages.size() > 0)                             \
-        {                                                    \
-            StringStream ss;                                 \
-            for (int32 i = 0; i < messages.size(); i++)      \
-            {                                                \
-                LOG(messages[i]);                            \
-                ss << messages[i] << '\n'                    \
-                   << "====================================" \
-                   << "\n";                                  \
-            }                                                \
-            Platform::ErrorBox(ss.str());                       \
-        }                                                    \
-    }
-
-#define DXRELEASE(object)  \
-    if ((object))          \
-    {                      \
-        object->Release(); \
-        object = nullptr;  \
-    }
-
-	class DirectXDebug
-	{
-	public:
-		DirectXDebug();
-		DirectXDebug(const DirectXDebug &) = delete;
-		DirectXDebug &operator=(const DirectXDebug &) = delete;
-		~DirectXDebug();
-
-		void Set();
-		std::vector<String> GetMessages() const;
-
-	private:
-		uint64 next = 0u;
-		struct IDXGIInfoQueue *info_queue = nullptr;
-	};
-
-	class Texture
-	{
-	public:
-		ID3D11Texture2D *texture = nullptr;
-		ID3D11ShaderResourceView *view = nullptr;
-		ID3D11SamplerState *sampler = nullptr;
-	};
-
-	class GraphicsContext;
-
-	class DXMesh
-	{
-		friend class GraphicsContext;
-		friend class DirectXImmediateRenderer;
-
-	public:
-		uint32 index = UINT32_MAX; // @TODO: Remove
-		uint32 stride_bytes = UINT32_MAX;
-		uint32 index_count = UINT32_MAX;
-		uint32 vertex_size = UINT32_MAX;
-		ID3D11Buffer *vertex_buffer = nullptr;
-		ID3D11Buffer *index_buffer = nullptr;
-
-	public:
-		inline bool IsValid() { return vertex_buffer && index_buffer; }
-
-		void Bind(GraphicsContext *gc) const;
-
-	public:
-
-		DXMesh();
-		~DXMesh();
-	};
-
-	class DXShader
-	{
-		friend class GraphicsContext;
-		friend class DirectXImmediateRenderer;
-
-	public:
-		ID3D11VertexShader *vs_shader = nullptr;
-		ID3D11PixelShader *ps_shader = nullptr;
-		ID3D11InputLayout *layout = nullptr;
-
-	public:
-		void Bind(GraphicsContext *gc) const;
-
-	public:
-		DXShader();
-		~DXShader();
-	};
-
-	class DXTexture
-	{
-		friend class GraphicsContext;
-		friend class DirectXImmediateRenderer;
-
-	public:
-		ID3D11Texture2D *texture = nullptr;
-		ID3D11ShaderResourceView *view = nullptr;
-		ID3D11SamplerState *sampler = nullptr;
-
-	public:
-		void Bind(GraphicsContext *gc, int32 register_index) const;
-
-	public:
-		DXTexture();
-		~DXTexture();
-	};
-
-	class DXConstBuffer
-	{
-
-	};
-
 	class GraphicsContext
 	{
 	public:
@@ -163,6 +26,8 @@ namespace cm
 
 		void Present();
 		void ClearBuffer(const Vec4f &colour);
+
+		void LogGPUS();
 
 	public:
 		ID3D11Device *device = nullptr;
@@ -211,6 +76,8 @@ namespace cm
 		GraphicsContext *gc;
 
 		ID3D11Buffer *uniform_buffer = nullptr;
+
+		DXConstBuffer lighting_buffer;
 
 		D3D11_VIEWPORT viewport;
 

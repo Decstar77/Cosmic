@@ -4,6 +4,7 @@
 #include "F:/Telescope/Cosmic/Cosmic/src/core/entities\Environment.h"
 #include "F:/Telescope/Cosmic/Cosmic/src/core/entities\GameCamera.h"
 #include "F:/Telescope/Cosmic/Cosmic/src/core/entities\Light.h"
+#include "F:/Telescope/Cosmic/Cosmic/src/core/entities\Particles.h"
 #include "F:/Telescope/Cosmic/Cosmic/src/core/entities\Turret.h"
 namespace cm
 {
@@ -35,6 +36,9 @@ namespace cm
 				ImGui::DragFloat3("acceleration", drone->acceleration.ptr, 0.25f);
 				ImGui::DragFloat("max_speed", &drone->max_speed);
 				ImGui::DragFloat("banking_angle", &drone->banking_angle);
+				ImGui::DragFloat("health", &drone->health);
+				ImGui::DragFloat("ammo", &drone->ammo);
+				ImGui::DragFloat("weight", &drone->weight);
 				ImGui::TreePop();
 			}
 			;
@@ -48,6 +52,8 @@ namespace cm
 				ImGui::DragFloat("strength", &pointlight->strength);
 				ImGui::DragFloat("radius", &pointlight->radius);
 				ImGui::DragFloat3("colour", pointlight->colour.ptr, 0.25f);
+
+
 				ImGui::TreePop();
 			}
 			;

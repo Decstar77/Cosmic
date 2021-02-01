@@ -1,83 +1,6 @@
 #include "DirectX11Renderer.h"
 namespace cm
 {
-	DirectXDebug::DirectXDebug()
-	{
-		HRESULT dxresult;
-		typedef HRESULT(WINAPI * DXGIGetDebugInterface)(REFIID, void **);
-
-		HMODULE mod_debug = LoadLibraryExA("dxgidebug.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
-		if (mod_debug)
-		{
-			DXGIGetDebugInterface debug_fnc = reinterpret_cast<DXGIGetDebugInterface>(reinterpret_cast<void *>(GetProcAddress(mod_debug, "DXGIGetDebugInterface")));
-			if (debug_fnc)
-			{
-				dxresult = debug_fnc(__uuidof(IDXGIInfoQueue), (void **)&info_queue);
-			}
-			else
-			{
-				Platform::ErrorBox("Could not find DX debug fnc in dll");
-			}
-		}
-		else
-		{
-			Platform::ErrorBox("Could not find DX debug dll");
-		}
-	}
-
-	DirectXDebug::~DirectXDebug()
-	{
-		if (info_queue)
-		{
-			info_queue->Release();
-		}
-	}
-
-	void DirectXDebug::Set()
-	{
-		next = info_queue->GetNumStoredMessages(DXGI_DEBUG_ALL);
-	}
-
-	std::vector<String> DirectXDebug::GetMessages() const
-	{
-		uint64 end = info_queue->GetNumStoredMessages(DXGI_DEBUG_ALL);
-		std::vector<String> messages;
-		// @NOTE: I think end - next is the current size needed for the array;
-		// @TODO: MAke this with out array lol
-		for (uint64 i = next; i < end; i++)
-		{
-			SIZE_T messageLength;
-			info_queue->GetMessage(DXGI_DEBUG_ALL, i, nullptr, &messageLength);
-
-			auto bytes = std::make_unique<byte[]>(messageLength);
-			auto message = reinterpret_cast<DXGI_INFO_QUEUE_MESSAGE *>(bytes.get());
-
-			info_queue->GetMessage(DXGI_DEBUG_ALL, i, message, &messageLength);
-			messages.emplace_back(message->pDescription);
-		}
-
-		return messages;
-	}
-
-	void DXMesh::Bind(GraphicsContext *gc) const
-	{
-		GETDEUBBGER();
-
-		uint32 offset = 0;
-		DXINFO(gc->context->IASetVertexBuffers(0, 1, &vertex_buffer, &stride_bytes, &offset));
-		DXINFO(gc->context->IASetIndexBuffer(index_buffer, DXGI_FORMAT_R32_UINT, 0));
-	}
-
-	DXMesh::DXMesh()
-	{
-	}
-
-	DXMesh::~DXMesh()
-	{
-	}
-
-
-
 	bool GraphicsContext::InitializeDirectX(HWND window)
 	{
 		GraphicsContext::window = window;
@@ -116,6 +39,7 @@ namespace cm
 			&feature_level,
 			&context));
 
+
 		//uint32 levels;
 		//device->CheckMultisampleQualityLevels(DXGI_FORMAT_R8G8B8A8_UNORM, 4, &levels);
 
@@ -136,7 +60,6 @@ namespace cm
 		DXCHECK(device->CreateDepthStencilState(&ds, &ds_state));
 
 		context->OMSetDepthStencilState(ds_state, 1);
-
 
 
 
@@ -351,6 +274,70 @@ namespace cm
 		DXINFO(context->ClearDepthStencilView(depth_target, D3D11_CLEAR_DEPTH, 1.0f, 0));
 	}
 
+	void GraphicsContext::LogGPUS()
+	{
+		IDXGIFactory* gi_factory;
+		DXCHECK(CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)(&gi_factory)));
+
+		std::vector<IDXGIAdapter*> adapters;
+
+		{
+			IDXGIAdapter* temp;
+			for (uint32 adapter_index = 0;
+				gi_factory->EnumAdapters(adapter_index, &temp) != DXGI_ERROR_NOT_FOUND;
+				adapter_index++)
+			{
+				adapters.push_back(temp);
+			}
+		}
+
+		for (IDXGIAdapter* adapter : adapters)
+		{
+			DXGI_ADAPTER_DESC desc = {};
+			DXCHECK(adapter->GetDesc(&desc));
+
+			LARGE_INTEGER version;
+			bool dx_support = adapter->CheckInterfaceSupport(__uuidof(IDXGIDevice), &version) == S_OK;
+
+			std::vector<IDXGIOutput*> displays;
+			{
+				IDXGIOutput* temp;
+				for (uint32 display_index = 0;
+					adapter->EnumOutputs(display_index, &temp) != DXGI_ERROR_NOT_FOUND;
+					display_index++)
+				{
+					displays.push_back(temp);
+				}
+			}
+
+
+
+			std::cout << "----------------" << std::endl;
+			std::wcout << desc.Description << std::endl;
+			std::cout << "Supports DX: " << dx_support << std::endl;
+			std::cout << "VRAM: " << desc.DedicatedVideoMemory / (1000 * 1000) << " MBS" << std::endl;
+			std::cout << "SRAM: " << desc.DedicatedSystemMemory / (1000 * 1000) << " MBS" << std::endl;
+
+			for (IDXGIOutput *display : displays)
+			{
+				DXGI_OUTPUT_DESC display_desc;
+
+				DXCHECK(display->GetDesc(&display_desc));
+
+				std::wcout << display_desc.DeviceName << std::endl;
+
+				DXRELEASE(display);
+			}
+
+			std::cout << "----------------" << std::endl;
+
+			DXRELEASE(adapter);
+		}
+
+
+		DXRELEASE(gi_factory);
+	}
+
 	GraphicsContext::GraphicsContext()
 	{
 
@@ -505,6 +492,48 @@ namespace cm
 		next_vertex_index += vertex_stride;
 	}
 
+	void WorldRenderer::RenderWorld(World *world)
+	{
+		AssetTable *asset_table = GameState::GetAssetTable();
+
+		Material material;
+		material.shader = asset_table->shader_instances.at(0);
+		material.textures.push_back(asset_table->texture_instances.at(0));
+
+		std::vector<Entity *> renderable_entities = world->CreateCollection([](Entity *entity) {
+			return entity->active && entity->should_draw && entity->GetMesh().IsOnGPU();
+		});
+
+		std::vector<Entity *> point_lights = world->CreateCollection([](Entity *entity) {
+			return entity->active && entity->GetType() == EntityType::POINTLIGHT;
+		});
+
+		PointLight *pl = (PointLight*)point_lights.at(0);
+
+		Vec3f view_pos = Camera::GetActiveCamera()->GetGlobalPosition();
+
+		lighting_buffer.ResetCopyPtr();
+		lighting_buffer.CopyInVec3f(Vec3f(-1.0f));
+		lighting_buffer.CopyInVec3f(view_pos);
+		lighting_buffer.CopyInVec3f(Vec3f(pl->GetGlobalPosition()));
+		lighting_buffer.CopyInVec3f(Vec3f(pl->colour));
+		lighting_buffer.Upload(gc);
+
+		for (GridCell &cell : world->grid.cells)
+		{
+			if (!cell.empty)
+			{
+				RenderMesh(asset_table->FindMeshInstance("cube"), material, Transform(cell.center));
+			}
+		}
+
+		for (Entity *entity : renderable_entities)
+		{
+			RenderMesh(entity->GetMesh(), material, entity->GetGlobalTransform());
+		}
+
+	}
+
 	void WorldRenderer::RenderMesh(const MeshInstance &mesh_instance, const Material &material, const Transform &transform)
 	{
 		// @TODO: Error checking
@@ -517,12 +546,18 @@ namespace cm
 		// @TODO: Abstract
 		Mat4f m = transform.CalculateTransformMatrix();
 
-		Mat4f const_buffer_data[2];
+		Mat4f const_buffer_data[5];
 		const_buffer_data[0] = m * view_matrix * projection_matrix;
-		const_buffer_data[1] = Inverse(m);
+		const_buffer_data[1] = projection_matrix;
+		const_buffer_data[2] = view_matrix;
+		const_buffer_data[3] = m;
+		const_buffer_data[4] = Inverse(m);
 
 		const_buffer_data[0] = Transpose(const_buffer_data[0]);
 		const_buffer_data[1] = Transpose(const_buffer_data[1]);
+		const_buffer_data[2] = Transpose(const_buffer_data[2]);
+		const_buffer_data[3] = Transpose(const_buffer_data[3]);
+		const_buffer_data[4] = Transpose(const_buffer_data[4]);
 
 		DXINFO(gc->context->UpdateSubresource(uniform_buffer, 0, nullptr, const_buffer_data, 0, 0));
 
@@ -586,13 +621,29 @@ namespace cm
 		cdc.Usage = D3D11_USAGE_DEFAULT; //D3D11_USAGE_DYNAMIC;
 		cdc.CPUAccessFlags = 0;
 		cdc.MiscFlags = 0;
-		cdc.ByteWidth = (uint32)(sizeof(Mat4f) * 2.0f);
+		cdc.ByteWidth = (uint32)(sizeof(Mat4f) * 5.0f);
 		cdc.StructureByteStride = 0;
 		D3D11_SUBRESOURCE_DATA cdc_sub = {};
-		Mat4f dummy[] = { Mat4f(1), Mat4f(1) };
+		Mat4f dummy[] = { Mat4f(1), Mat4f(1), Mat4f(1), Mat4f(1), Mat4f(1) };
 		cdc_sub.pSysMem = dummy;
 
 		DXCHECK(gc->device->CreateBuffer(&cdc, &cdc_sub, &uniform_buffer));
+
+		//----------------------------
+		//----------------------------
+		//----------------------------
+
+		lighting_buffer.Create(gc, (uint32)(sizeof(Vec3f) * 4.0f));
+		lighting_buffer.ResetCopyPtr();
+		lighting_buffer.CopyInVec3f(Vec3f(1.0f));
+		lighting_buffer.CopyInVec3f(Vec3f(0.0f));
+		lighting_buffer.CopyInVec3f(Vec3f(0.0f));
+		lighting_buffer.CopyInVec3f(Vec3f(0.0f));
+		lighting_buffer.Upload(gc);
+		//lbuffer.CopyAndUpload(gc, { 1.0f, 1.0f, 1.0f, 0.0f,  0.1f, 0.1f, 0.2f, 99.0f });
+		lighting_buffer.Bind(gc, ShaderStage::PIXEL_SHADER, 0);
+
+		//DXINFO(gc->context->PSSetConstantBuffers(0, 1, &lighting_buffer));
 
 		// @TODO: Use platform
 		RECT rect;
@@ -614,41 +665,7 @@ namespace cm
 
 	}
 
-	void DXShader::Bind(GraphicsContext *gc) const
-	{
-		GETDEUBBGER();
 
-		DXINFO(gc->context->VSSetShader(vs_shader, nullptr, 0));
-		DXINFO(gc->context->PSSetShader(ps_shader, nullptr, 0));
-		DXINFO(gc->context->IASetInputLayout(layout));
-	}
 
-	DXShader::DXShader()
-	{
-
-	}
-
-	DXShader::~DXShader()
-	{
-
-	}
-
-	void DXTexture::Bind(GraphicsContext *gc, int32 register_index) const
-	{
-		GETDEUBBGER();
-
-		DXINFO(gc->context->PSSetShaderResources(register_index, 1, &view));
-		DXINFO(gc->context->PSSetSamplers(register_index, 1, &sampler));
-	}
-
-	DXTexture::DXTexture()
-	{
-
-	}
-
-	DXTexture::~DXTexture()
-	{
-
-	}
 
 } // namespace cm
