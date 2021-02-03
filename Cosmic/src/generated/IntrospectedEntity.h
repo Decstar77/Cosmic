@@ -3,9 +3,12 @@
 #include "F:/Telescope/Cosmic/Cosmic/src/core/entities\Entity.h"
 #include "F:/Telescope/Cosmic/Cosmic/src/core/entities\Environment.h"
 #include "F:/Telescope/Cosmic/Cosmic/src/core/entities\GameCamera.h"
-#include "F:/Telescope/Cosmic/Cosmic/src/core/entities\Light.h"
+#include "F:/Telescope/Cosmic/Cosmic/src/core/entities\Lights.h"
 #include "F:/Telescope/Cosmic/Cosmic/src/core/entities\Particles.h"
 #include "F:/Telescope/Cosmic/Cosmic/src/core/entities\Turret.h"
+#include "F:/Telescope/Cosmic/Cosmic/src/core/entities/lights\DirectionalLight.h"
+#include "F:/Telescope/Cosmic/Cosmic/src/core/entities/lights\PointLight.h"
+#include "F:/Telescope/Cosmic/Cosmic/src/core/entities/lights\SpotLight.h"
 namespace cm
 {
 	static void IntrospectedEntityGUI(Entity *entity)
@@ -44,6 +47,29 @@ namespace cm
 			;
 		}
 		break;
+		case EntityType::TURRET:
+		{
+			if (ImGui::TreeNode("Turret"))
+			{
+				Turret* turret = reinterpret_cast<Turret*>(entity);
+				ImGui::TreePop();
+			}
+			;
+		}
+		break;
+		case EntityType::DIRECTIONALLIGHT:
+		{
+			if (ImGui::TreeNode("DirectionalLight"))
+			{
+				DirectionalLight* directionallight = reinterpret_cast<DirectionalLight*>(entity);
+				ImGui::DragFloat("strength", &directionallight->strength);
+				ImGui::DragFloat("radius", &directionallight->radius);
+				ImGui::ColorPicker3("colour", directionallight->colour.ptr);
+				ImGui::TreePop();
+			}
+			;
+		}
+		break;
 		case EntityType::POINTLIGHT:
 		{
 			if (ImGui::TreeNode("PointLight"))
@@ -51,19 +77,21 @@ namespace cm
 				PointLight* pointlight = reinterpret_cast<PointLight*>(entity);
 				ImGui::DragFloat("strength", &pointlight->strength);
 				ImGui::DragFloat("radius", &pointlight->radius);
-				ImGui::DragFloat3("colour", pointlight->colour.ptr, 0.25f);
-
-
+				ImGui::ColorPicker3("colour", pointlight->colour.ptr);
 				ImGui::TreePop();
 			}
 			;
 		}
 		break;
-		case EntityType::TURRET:
+		case EntityType::SPOTLIGHT:
 		{
-			if (ImGui::TreeNode("Turret"))
+			if (ImGui::TreeNode("SpotLight"))
 			{
-				Turret* turret = reinterpret_cast<Turret*>(entity);
+				SpotLight* spotlight = reinterpret_cast<SpotLight*>(entity);
+				ImGui::DragFloat("strength", &spotlight->strength);
+				ImGui::DragFloat("inner", &spotlight->innner);
+				ImGui::DragFloat("outter", &spotlight->outter);
+				ImGui::ColorPicker3("colour", spotlight->colour.ptr);
 				ImGui::TreePop();
 			}
 			;

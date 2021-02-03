@@ -18,14 +18,16 @@ namespace cm
 		ShaderStage stage = ShaderStage::INVALID;
 
 		uint32 copy_ptr = 0;
-		std::vector<real32> data;
+		std::vector<uint8> data;
 
 	public:
-		void CopyAndUpload(GraphicsContext *gc, const std::vector<real32> &data);
-		void Copy(const std::vector<real32> &data);
+		void CopyAndUpload(GraphicsContext *gc, const std::vector<uint8> &data);
+		void Copy(const std::vector<uint8> &data);
 
 		inline void ResetCopyPtr() { copy_ptr = 0; }
 		void CopyInVec3f(const Vec3f &in);
+		void CopyInVec4f(const Vec4f &in);
+		void CopyInVec3i(const Vec3i &in);
 
 		void Upload(GraphicsContext *gc);
 

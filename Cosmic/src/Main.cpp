@@ -16,7 +16,7 @@
 #include "src/core/entities/Environment.h"
 #include "src/core/entities/Turret.h"
 #include "src/core/entities/GameCamera.h"
-#include "src/core/entities/Light.h"
+#include "src/core/entities/Lights.h"
 #include "src/core/entities/Drone.h"
 #include "src/core/Physics.h"
 #include "src/core/SoundSystem.h"

@@ -504,21 +504,101 @@ namespace cm
 			return entity->active && entity->should_draw && entity->GetMesh().IsOnGPU();
 		});
 
+		std::vector<Entity *> direction_lights = world->CreateCollection([](Entity *entity) {
+			return entity->active && entity->GetType() == EntityType::DIRECTIONALLIGHT;
+		});
+
+		std::vector<Entity *> spot_lights = world->CreateCollection([](Entity *entity) {
+			return entity->active && entity->GetType() == EntityType::SPOTLIGHT;
+		});
+
 		std::vector<Entity *> point_lights = world->CreateCollection([](Entity *entity) {
 			return entity->active && entity->GetType() == EntityType::POINTLIGHT;
 		});
 
-		PointLight *pl = (PointLight*)point_lights.at(0);
+		const int32 max_directional_light_count = 2;
+		const int32 max_spot_light_count = 8;
+		const int32 max_point_light_count = 16;
+
+		int32 directional_light_count = static_cast<int32>(direction_lights.size());
+		int32 spot_light_count = static_cast<int32>(spot_lights.size());
+		int32 point_light_count = static_cast<int32>(point_lights.size());
 
 		Vec3f view_pos = Camera::GetActiveCamera()->GetGlobalPosition();
+		Vec3<int32> light_counts = Vec3i(directional_light_count, spot_light_count, point_light_count);
 
+#if 1
+		lighting_buffer.ResetCopyPtr();
+		lighting_buffer.CopyInVec3f(view_pos);
+		lighting_buffer.CopyInVec3i(light_counts);
+
+		{
+			int32 directional_light_index = 0;
+			for (; directional_light_index < directional_light_count; directional_light_index++)
+			{
+				DirectionalLight *directional_light =
+					reinterpret_cast<DirectionalLight*>(direction_lights.at(directional_light_index));
+
+				Transform t = directional_light->GetGlobalTransform();
+
+				lighting_buffer.CopyInVec3f(t.GetBasis().forward);
+				lighting_buffer.CopyInVec3f(directional_light->colour * directional_light->strength);
+			}
+			for (; directional_light_index < max_directional_light_count; directional_light_index++)
+			{
+				lighting_buffer.CopyInVec3f(Vec3f(0.0f));
+				lighting_buffer.CopyInVec3f(Vec3f(0.0f));
+			}
+		}
+		{
+			int32 spot_light_index = 0;
+			for (; spot_light_index < spot_light_count; spot_light_index++)
+			{
+				SpotLight *spot_light =
+					reinterpret_cast<SpotLight *>(spot_lights.at(spot_light_index));
+
+				Transform t = spot_light->GetGlobalTransform();
+
+				Vec4f pos_inner = Vec4f(t.position, Cos(DegToRad(spot_light->innner)));
+				Vec4f dir_outter = Vec4f(t.GetBasis().forward, Cos(DegToRad(spot_light->outter)));
+
+				lighting_buffer.CopyInVec4f(pos_inner);
+				lighting_buffer.CopyInVec4f(dir_outter);
+				lighting_buffer.CopyInVec3f(spot_light->colour * spot_light->strength);
+			}
+			for (; spot_light_index < max_spot_light_count; spot_light_index++)
+			{
+				lighting_buffer.CopyInVec4f(Vec4f(0.0f));
+				lighting_buffer.CopyInVec4f(Vec4f(0.0f));
+				lighting_buffer.CopyInVec3f(Vec3f(0.0f));
+			}
+		}
+		{
+			int32 point_light_index = 0;
+			for (; point_light_index < point_light_count; point_light_index++)
+			{
+				PointLight *point_light =
+					reinterpret_cast<PointLight *>(point_lights.at(point_light_index));
+				lighting_buffer.CopyInVec3f(point_light->GetGlobalPosition());
+				lighting_buffer.CopyInVec3f(point_light->colour * point_light->strength);
+			}
+			for (; point_light_index < max_point_light_count; point_light_index++)
+			{
+				lighting_buffer.CopyInVec3f(Vec3f(0.0f));
+				lighting_buffer.CopyInVec3f(Vec3f(0.0f));
+			}
+		}
+
+		lighting_buffer.Upload(gc);
+#else
+		PointLight *pl = (PointLight*)point_lights.at(0);
 		lighting_buffer.ResetCopyPtr();
 		lighting_buffer.CopyInVec3f(Vec3f(-1.0f));
 		lighting_buffer.CopyInVec3f(view_pos);
 		lighting_buffer.CopyInVec3f(Vec3f(pl->GetGlobalPosition()));
 		lighting_buffer.CopyInVec3f(Vec3f(pl->colour));
 		lighting_buffer.Upload(gc);
-
+#endif
 		for (GridCell &cell : world->grid.cells)
 		{
 			if (!cell.empty)
@@ -633,7 +713,7 @@ namespace cm
 		//----------------------------
 		//----------------------------
 
-		lighting_buffer.Create(gc, (uint32)(sizeof(Vec3f) * 4.0f));
+		lighting_buffer.Create(gc, (uint32)(sizeof(Vec3f) * 64.0f));
 		lighting_buffer.ResetCopyPtr();
 		lighting_buffer.CopyInVec3f(Vec3f(1.0f));
 		lighting_buffer.CopyInVec3f(Vec3f(0.0f));

@@ -1,2 +1,15 @@
 ﻿  compilation object save succeeded; see F:\Telescope\Cosmic\res\complied_shaders\basic_pbr.pixl.cso
+  Main.cpp
+  Grid.cpp
+  Physics.cpp
+  World.cpp
+  Drone.cpp
+  Particles.cpp
+  Editor.cpp
+  GeneralWindow.cpp
+  DXConstantBuffer.cpp
+  DXMesh.cpp
+  DXShader.cpp
+  DXTexture.cpp
+  DirectX11Renderer.cpp
   Cosmic.vcxproj -> F:\Telescope\Cosmic\build\x64\Debug\Cosmic.exe

@@ -366,14 +366,17 @@ namespace cm
 	template <typename T>
 	struct Vec2;
 	typedef Vec2<real32> Vec2f;
+	typedef Vec2<int32> Vec2i;
 
 	template <typename T>
 	struct Vec3;
 	typedef Vec3<real32> Vec3f;
+	typedef Vec3<int32> Vec3i;
 
 	template <typename T>
 	struct Vec4;
 	typedef Vec4<real32> Vec4f;
+	typedef Vec4<int32> Vec4i;
 
 	template <typename T>
 	struct Quat;

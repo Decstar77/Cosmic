@@ -4,24 +4,32 @@
 
 cbuffer LightingInfo : register(b0)
 {
+#if 0
 	float3 direction;
 	float3 viewPos;
 
 	float3 lightPos;
 	float3 lightColour;
-
-	//float3 viewPos;
+#else
+	float3 viewPos;
 	int4 lightCounts;	// @NOTE: Directional, spot, point
 
-	float4 dDirections[MAX_DIRECTIONAL_LIGHT_COUNT];
-	float4 dColours[MAX_DIRECTIONAL_LIGHT_COUNT];
+	struct {
+		float3 direction;
+		float3 colour;
+	} directionalLights[MAX_DIRECTIONAL_LIGHT_COUNT];
 
-	float4 sPositions[MAX_SPOT_LIGHT_COUNT];		// @NOTE: z = innter cuttoff
-	float4 sDirections[MAX_SPOT_LIGHT_COUNT];		// @NOTE: y = innter cuttoff
-	float4 sColours[MAX_SPOT_LIGHT_COUNT];
+	struct {
+		float4 position;		// @NOTE: z = inner cuttoff
+		float4 direction;		// @NOTE: y = outter cuttoff
+		float3 colour;
+	} spotLights[MAX_SPOT_LIGHT_COUNT];
 
-	float4 pPositions[MAX_POINT_LIGHT_COUNT];
-	float4 pColours[MAX_POINT_LIGHT_COUNT];
+	struct {
+		float3 position;
+		float3 colour;
+	} pointLights[MAX_POINT_LIGHT_COUNT];
+#endif
 }
 
 Texture2D tex : register(t0);
@@ -44,6 +52,8 @@ struct SpotLight
 	float3 colour;
 	float3 direction;
 	float3 position;
+	float inner;
+	float outter;
 };
 
 struct Material
@@ -154,8 +164,8 @@ float3 CalculateSpotLighting(PixelInfo info, Material material, SpotLight light)
 	float3 H = normalize(V + L);
 
 	float theta = dot(L, normalize(-light.direction));
-	float cutoff = cos(0.20944f);
-	float outerCutOff = cos(0.261799f);
+	float cutoff = light.inner;
+	float outerCutOff = light.outter;
 	float epsilon = cutoff - outerCutOff;
 	float intensity = clamp((theta - outerCutOff) / epsilon, 0.0, 1.0);
 
@@ -239,7 +249,6 @@ float3 CalculatePointLighting(PixelInfo info, Material material, PointLight ligh
 // ----------------------------------------------------------------------------
 float4 main(float3 world_position : WorldPos, float2 texture_coords : TexCord, float3 normal : Normal) : SV_TARGET
 {
-#if 1
 	PixelInfo pinfo;
 	pinfo.normal = normalize(normal);
 	pinfo.worldPos = world_position;
@@ -252,15 +261,11 @@ float4 main(float3 world_position : WorldPos, float2 texture_coords : TexCord, f
 	material.metallic = 0.0f;
 	material.F0 = float3(0.04, 0.04, 0.04); //(like plastic)
 
+#if 0
 	PointLight plight;
 	plight.colour = lightColour * 100;
 	plight.position = lightPos;
 	float3 Lo = CalculatePointLighting(pinfo, material, plight);
-
-	plight.colour = lightColour * 100;
-	plight.position = lightPos + float3(2, 0, 0);
-	Lo += CalculatePointLighting(pinfo, material, plight);
-
 
 	DirectionalLight dlight;
 	dlight.colour = lightColour * 10;
@@ -272,7 +277,47 @@ float4 main(float3 world_position : WorldPos, float2 texture_coords : TexCord, f
 	slight.colour = lightColour * 10;
 	slight.direction = float3(0, -1, 0);
 	//float3 Lo = CalculateSpotLighting(pinfo, material, slight);
+#else
+	int directionalLightCount = lightCounts.x;
+	int spotLightCount = lightCounts.y;
+	int pointLightCount = lightCounts.z;
 
+	float3 Lo = float3(0,0,0);
+
+	for (int dindex = 0; dindex < directionalLightCount; dindex++)
+	{
+		DirectionalLight dlight;
+		dlight.direction = directionalLights[dindex].direction;
+		dlight.colour = directionalLights[dindex].colour;
+
+		Lo += CalculateDirectionalLighting(pinfo, material, dlight);
+	}
+
+	for (int sindex = 0; sindex < spotLightCount; sindex++)
+	{
+		SpotLight slight;
+		slight.position = spotLights[sindex].position.xyz;
+		slight.direction = spotLights[sindex].direction.xyz;
+
+		//slight.inner = cos(0.20944f);
+		//slight.outter = cos(0.261799f);
+
+		slight.inner = spotLights[sindex].position.w;
+		slight.outter = spotLights[sindex].direction.w;
+
+		slight.colour = spotLights[sindex].colour;
+		Lo += CalculateSpotLighting(pinfo, material, slight);
+	}
+
+	for (int pindex = 0; pindex < pointLightCount; pindex++)
+	{
+		PointLight plight;
+		plight.colour = pointLights[pindex].colour * 100;
+		plight.position = pointLights[pindex].position;
+		Lo += CalculatePointLighting(pinfo, material, plight);
+	}
+
+#endif
 
 	float3 color = Lo;
 
@@ -284,26 +329,4 @@ float4 main(float3 world_position : WorldPos, float2 texture_coords : TexCord, f
 	float4 pixel_colour = float4(color, 1.0);
 
 	return pixel_colour;
-
-#else
-
-	float3 light_dir = direction;
-
-	float3 diffuse = tex.Sample(splr, texture_coords).rgb;
-	float3 spec = float3(0.5f, 0.5f, 0.5f);
-	float3 norm = normalize(normal);
-
-
-	light_dir = normalize(light_dir);
-	normal = normalize(normal);
-
-	float d = max(dot(light_dir, normal), 0.1f) * 1.5f;
-
-	float3 col = tex.Sample(splr, texture_coords).rgb * d;
-
-	//return float4(tex.Sample(splr, texture_coords).a, 1.0f, 1.0f, 1.0f);
-	// return tex.Sample(splr, texture_coords);
-	return float4(col, 1.0f);
-	// return float4(normal, 1.0f);
-#endif
 }
