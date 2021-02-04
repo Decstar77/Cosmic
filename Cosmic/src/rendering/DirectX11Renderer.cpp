@@ -16,7 +16,7 @@ namespace cm
 		sd.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
 		sd.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
 
-		sd.SampleDesc.Count = 4;
+		sd.SampleDesc.Count = 1;//4;
 		sd.SampleDesc.Quality = 0;
 
 		sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
@@ -73,7 +73,7 @@ namespace cm
 		depth_ds.MipLevels = 1;
 		depth_ds.ArraySize = 1;
 		depth_ds.Format = DXGI_FORMAT_D32_FLOAT;
-		depth_ds.SampleDesc.Count = 4;
+		depth_ds.SampleDesc.Count = 1;//4;
 		depth_ds.SampleDesc.Quality = 0;
 		depth_ds.Usage = D3D11_USAGE_DEFAULT;
 		depth_ds.BindFlags = D3D11_BIND_DEPTH_STENCIL;
@@ -82,7 +82,8 @@ namespace cm
 
 		D3D11_DEPTH_STENCIL_VIEW_DESC depth_view_dsc = {};
 		depth_view_dsc.Format = DXGI_FORMAT_D32_FLOAT;
-		depth_view_dsc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DMS;
+		depth_view_dsc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+		//depth_view_dsc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DMS;
 		depth_view_dsc.Texture2D.MipSlice = 0;
 		DXCHECK(device->CreateDepthStencilView(depth_texture, &depth_view_dsc, &depth_target));
 
@@ -261,6 +262,49 @@ namespace cm
 		int32 index = static_cast<int32>(texture_areana.Add(text));
 
 		instance->graphics_table_index = index;
+	}
+
+	cm::DXRenderTarget GraphicsContext::CreateRenderTarget(const int32 &width, const int32 &height)
+	{
+		DXRenderTarget dx_render_target;
+
+		D3D11_TEXTURE2D_DESC texture_desc = {};
+		texture_desc.Width = width;
+		texture_desc.Height = height;
+		texture_desc.MipLevels = 1;
+		texture_desc.ArraySize = 1;
+		texture_desc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+		texture_desc.SampleDesc.Count = 1;
+		texture_desc.SampleDesc.Quality = 0;
+		texture_desc.Usage = D3D11_USAGE_DEFAULT;
+		texture_desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+		texture_desc.CPUAccessFlags = 0;
+		texture_desc.MiscFlags = 0;
+
+		DXCHECK(device->CreateTexture2D(&texture_desc, NULL, &dx_render_target.texture));
+
+		// ----------------------------------------------------------------------------
+		// ----------------------------------------------------------------------------
+
+		D3D11_RENDER_TARGET_VIEW_DESC render_target_desc = {};
+		render_target_desc.Format = texture_desc.Format;
+		render_target_desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D; // D3D11_RTV_DIMENSION_TEXTURE2DMS
+		render_target_desc.Texture2D.MipSlice = 0;
+
+		DXCHECK(device->CreateRenderTargetView(dx_render_target.texture, &render_target_desc, &dx_render_target.render_target));
+
+		// ----------------------------------------------------------------------------
+		// ----------------------------------------------------------------------------
+
+		D3D11_SHADER_RESOURCE_VIEW_DESC shader_view_desc = {};
+		shader_view_desc.Format = texture_desc.Format;
+		shader_view_desc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+		shader_view_desc.Texture2D.MostDetailedMip = 0;
+		shader_view_desc.Texture2D.MipLevels = 1;
+
+		DXCHECK(device->CreateShaderResourceView(dx_render_target.texture, &shader_view_desc, &dx_render_target.shader_view));
+
+		return dx_render_target;
 	}
 
 	void GraphicsContext::Present()
@@ -492,8 +536,12 @@ namespace cm
 		next_vertex_index += vertex_stride;
 	}
 
+
+
 	void WorldRenderer::RenderWorld(World *world)
 	{
+		GETDEUBBGER();
+
 		AssetTable *asset_table = GameState::GetAssetTable();
 
 		Material material;
@@ -504,101 +552,16 @@ namespace cm
 			return entity->active && entity->should_draw && entity->GetMesh().IsOnGPU();
 		});
 
-		std::vector<Entity *> direction_lights = world->CreateCollection([](Entity *entity) {
-			return entity->active && entity->GetType() == EntityType::DIRECTIONALLIGHT;
-		});
+		UploadLightingInfo(world);
 
-		std::vector<Entity *> spot_lights = world->CreateCollection([](Entity *entity) {
-			return entity->active && entity->GetType() == EntityType::SPOTLIGHT;
-		});
+		DXINFO(gc->context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST)); // @TODO: once off
 
-		std::vector<Entity *> point_lights = world->CreateCollection([](Entity *entity) {
-			return entity->active && entity->GetType() == EntityType::POINTLIGHT;
-		});
+		offscreen_render_target.Clear(gc, gc->depth_target, Vec4f(1));
 
-		const int32 max_directional_light_count = 2;
-		const int32 max_spot_light_count = 8;
-		const int32 max_point_light_count = 16;
+		ID3D11ShaderResourceView* nulltexture[] = { nullptr };
+		DXINFO(gc->context->PSSetShaderResources(0, 1, nulltexture));
+		DXINFO(gc->context->OMSetRenderTargets(1, &offscreen_render_target.render_target, gc->depth_target)); // @TODO: once off ?
 
-		int32 directional_light_count = static_cast<int32>(direction_lights.size());
-		int32 spot_light_count = static_cast<int32>(spot_lights.size());
-		int32 point_light_count = static_cast<int32>(point_lights.size());
-
-		Vec3f view_pos = Camera::GetActiveCamera()->GetGlobalPosition();
-		Vec3<int32> light_counts = Vec3i(directional_light_count, spot_light_count, point_light_count);
-
-#if 1
-		lighting_buffer.ResetCopyPtr();
-		lighting_buffer.CopyInVec3f(view_pos);
-		lighting_buffer.CopyInVec3i(light_counts);
-
-		{
-			int32 directional_light_index = 0;
-			for (; directional_light_index < directional_light_count; directional_light_index++)
-			{
-				DirectionalLight *directional_light =
-					reinterpret_cast<DirectionalLight*>(direction_lights.at(directional_light_index));
-
-				Transform t = directional_light->GetGlobalTransform();
-
-				lighting_buffer.CopyInVec3f(t.GetBasis().forward);
-				lighting_buffer.CopyInVec3f(directional_light->colour * directional_light->strength);
-			}
-			for (; directional_light_index < max_directional_light_count; directional_light_index++)
-			{
-				lighting_buffer.CopyInVec3f(Vec3f(0.0f));
-				lighting_buffer.CopyInVec3f(Vec3f(0.0f));
-			}
-		}
-		{
-			int32 spot_light_index = 0;
-			for (; spot_light_index < spot_light_count; spot_light_index++)
-			{
-				SpotLight *spot_light =
-					reinterpret_cast<SpotLight *>(spot_lights.at(spot_light_index));
-
-				Transform t = spot_light->GetGlobalTransform();
-
-				Vec4f pos_inner = Vec4f(t.position, Cos(DegToRad(spot_light->innner)));
-				Vec4f dir_outter = Vec4f(t.GetBasis().forward, Cos(DegToRad(spot_light->outter)));
-
-				lighting_buffer.CopyInVec4f(pos_inner);
-				lighting_buffer.CopyInVec4f(dir_outter);
-				lighting_buffer.CopyInVec3f(spot_light->colour * spot_light->strength);
-			}
-			for (; spot_light_index < max_spot_light_count; spot_light_index++)
-			{
-				lighting_buffer.CopyInVec4f(Vec4f(0.0f));
-				lighting_buffer.CopyInVec4f(Vec4f(0.0f));
-				lighting_buffer.CopyInVec3f(Vec3f(0.0f));
-			}
-		}
-		{
-			int32 point_light_index = 0;
-			for (; point_light_index < point_light_count; point_light_index++)
-			{
-				PointLight *point_light =
-					reinterpret_cast<PointLight *>(point_lights.at(point_light_index));
-				lighting_buffer.CopyInVec3f(point_light->GetGlobalPosition());
-				lighting_buffer.CopyInVec3f(point_light->colour * point_light->strength);
-			}
-			for (; point_light_index < max_point_light_count; point_light_index++)
-			{
-				lighting_buffer.CopyInVec3f(Vec3f(0.0f));
-				lighting_buffer.CopyInVec3f(Vec3f(0.0f));
-			}
-		}
-
-		lighting_buffer.Upload(gc);
-#else
-		PointLight *pl = (PointLight*)point_lights.at(0);
-		lighting_buffer.ResetCopyPtr();
-		lighting_buffer.CopyInVec3f(Vec3f(-1.0f));
-		lighting_buffer.CopyInVec3f(view_pos);
-		lighting_buffer.CopyInVec3f(Vec3f(pl->GetGlobalPosition()));
-		lighting_buffer.CopyInVec3f(Vec3f(pl->colour));
-		lighting_buffer.Upload(gc);
-#endif
 		for (GridCell &cell : world->grid.cells)
 		{
 			if (!cell.empty)
@@ -612,8 +575,38 @@ namespace cm
 			RenderMesh(entity->GetMesh(), material, entity->GetGlobalTransform());
 		}
 
+		DXINFO(gc->context->OMSetRenderTargets(1, &gc->render_target, gc->depth_target)); // @TODO: once off ?
+
+		DXShader *shader = gc->shader_areana.Get(post_processing_shader.graphics_table_index);
+		shader->Bind(gc);
+
+		DXINFO(gc->context->PSSetShaderResources(0, 1, &offscreen_render_target.shader_view));
+
+		RenderQuad();
 	}
 
+	void WorldRenderer::RenderQuad()
+	{
+		GETDEUBBGER();
+
+
+
+		DXINFO(gc->context->RSSetViewports(1, &viewport)); // @TODO: once off
+
+		//////////////////////////////////
+		//////////////////////////////////
+
+		DXMesh *mesh = gc->mesh_areana.Get(screen_space_quad_index);
+		mesh->Bind(gc);
+
+		//////////////////////////////////
+		//////////////////////////////////
+
+		//////////////////////////////////
+		//////////////////////////////////
+
+		DXINFO(gc->context->DrawIndexed(mesh->index_count, 0, 0));
+	}
 	void WorldRenderer::RenderMesh(const MeshInstance &mesh_instance, const Material &material, const Transform &transform)
 	{
 		// @TODO: Error checking
@@ -676,10 +669,6 @@ namespace cm
 		//////////////////////////////////
 		//////////////////////////////////
 
-		DXINFO(gc->context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST)); // @TODO: once off
-
-		DXINFO(gc->context->OMSetRenderTargets(1, &gc->render_target, gc->depth_target)); // @TODO: once off ?
-
 		DXINFO(gc->context->DrawIndexed(mesh->index_count, 0, 0));
 	}
 
@@ -738,6 +727,21 @@ namespace cm
 		viewport.MaxDepth = 1;
 		viewport.TopLeftX = 0;
 		viewport.TopLeftY = 0;
+
+		real32 quad_data[] = {
+			-1, 1, 0,	0, 0, -1,	0, 0,
+			1, -1, 0,	0, 0, -1,	1, 1,
+			-1, -1, 0,	0, 0, -1,	0, 1,
+			1, 1, 0,	0, 0, -1,	1, 0
+		};
+
+		uint32 index_data[] = {
+			0, 1, 2, 0, 3, 1
+		};
+
+		screen_space_quad_index = gc->CreateMesh(quad_data, 32, 8 * sizeof(real32), index_data, 6);
+
+		offscreen_render_target = gc->CreateRenderTarget((uint32)window_width, (uint32)window_height);
 	}
 
 	WorldRenderer::~WorldRenderer()
@@ -745,7 +749,109 @@ namespace cm
 
 	}
 
+	void WorldRenderer::UploadLightingInfo(World *world)
+	{
+		std::vector<Entity *> direction_lights = world->CreateCollection([](Entity *entity) {
+			return entity->active && entity->GetType() == EntityType::DIRECTIONALLIGHT;
+		});
+
+		std::vector<Entity *> spot_lights = world->CreateCollection([](Entity *entity) {
+			return entity->active && entity->GetType() == EntityType::SPOTLIGHT;
+		});
+
+		std::vector<Entity *> point_lights = world->CreateCollection([](Entity *entity) {
+			return entity->active && entity->GetType() == EntityType::POINTLIGHT;
+		});
+
+		const int32 max_directional_light_count = 2;
+		const int32 max_spot_light_count = 8;
+		const int32 max_point_light_count = 16;
+
+		int32 directional_light_count = static_cast<int32>(direction_lights.size());
+		int32 spot_light_count = static_cast<int32>(spot_lights.size());
+		int32 point_light_count = static_cast<int32>(point_lights.size());
+
+		Vec3f view_pos = Camera::GetActiveCamera()->GetGlobalPosition();
+		Vec3<int32> light_counts = Vec3i(directional_light_count, spot_light_count, point_light_count);
+
+		lighting_buffer.ResetCopyPtr();
+		lighting_buffer.CopyInVec3f(view_pos);
+		lighting_buffer.CopyInVec3i(light_counts);
+
+		{
+			int32 directional_light_index = 0;
+			for (; directional_light_index < directional_light_count; directional_light_index++)
+			{
+				DirectionalLight *directional_light =
+					reinterpret_cast<DirectionalLight*>(direction_lights.at(directional_light_index));
+
+				Transform t = directional_light->GetGlobalTransform();
+
+				lighting_buffer.CopyInVec3f(t.GetBasis().forward);
+				lighting_buffer.CopyInVec3f(directional_light->colour * directional_light->strength);
+			}
+			for (; directional_light_index < max_directional_light_count; directional_light_index++)
+			{
+				lighting_buffer.CopyInVec3f(Vec3f(0.0f));
+				lighting_buffer.CopyInVec3f(Vec3f(0.0f));
+			}
+		}
+		{
+			int32 spot_light_index = 0;
+			for (; spot_light_index < spot_light_count; spot_light_index++)
+			{
+				SpotLight *spot_light =
+					reinterpret_cast<SpotLight *>(spot_lights.at(spot_light_index));
+
+				Transform t = spot_light->GetGlobalTransform();
+
+				Vec4f pos_inner = Vec4f(t.position, Cos(DegToRad(spot_light->innner)));
+				Vec4f dir_outter = Vec4f(t.GetBasis().forward, Cos(DegToRad(spot_light->outter)));
+
+				lighting_buffer.CopyInVec4f(pos_inner);
+				lighting_buffer.CopyInVec4f(dir_outter);
+				lighting_buffer.CopyInVec3f(spot_light->colour * spot_light->strength);
+			}
+			for (; spot_light_index < max_spot_light_count; spot_light_index++)
+			{
+				lighting_buffer.CopyInVec4f(Vec4f(0.0f));
+				lighting_buffer.CopyInVec4f(Vec4f(0.0f));
+				lighting_buffer.CopyInVec3f(Vec3f(0.0f));
+			}
+		}
+		{
+			int32 point_light_index = 0;
+			for (; point_light_index < point_light_count; point_light_index++)
+			{
+				PointLight *point_light =
+					reinterpret_cast<PointLight *>(point_lights.at(point_light_index));
+				lighting_buffer.CopyInVec3f(point_light->GetGlobalPosition());
+				lighting_buffer.CopyInVec3f(point_light->colour * point_light->strength);
+			}
+			for (; point_light_index < max_point_light_count; point_light_index++)
+			{
+				lighting_buffer.CopyInVec3f(Vec3f(0.0f));
+				lighting_buffer.CopyInVec3f(Vec3f(0.0f));
+			}
+		}
+
+		lighting_buffer.Upload(gc);
+	}
 
 
+	void DXRenderTarget::Bind(GraphicsContext *gc, ID3D11DepthStencilView* depthStencilView)
+	{
+		GETDEUBBGER();
+		DXINFO(gc->context->OMSetRenderTargets(1, &render_target, depthStencilView));
+	}
+
+	void DXRenderTarget::Clear(GraphicsContext *gc, ID3D11DepthStencilView* depthStencilView, const Vec4f &colour)
+	{
+		GETDEUBBGER();
+		DXINFO(gc->context->ClearRenderTargetView(render_target, colour.ptr));
+
+		gc->context->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+
+	}
 
 } // namespace cm

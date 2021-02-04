@@ -75,10 +75,13 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		asset_loader->LoadShader("../res/complied_shaders/debug_line.vert.cso", "../res/complied_shaders/debug_line.pixl.cso");
 		graphics_context->CreateShader(&asset_table->shader_instances.at(1), &asset_table->editable_shaders.at(1));
 
+		asset_loader->LoadShader("../res/complied_shaders/post_processing.vert.cso", "../res/complied_shaders/post_processing.pixl.cso");
+		graphics_context->CreateShader(&asset_table->shader_instances.at(2), &asset_table->editable_shaders.at(2));
+
 		asset_loader->LoadTexture("../res/PolygonScifi_01_A.png");
 		graphics_context->CreateTexture(&asset_table->texture_instances.at(0), &asset_table->editable_textures.at(0));
 
-
+		world_renderer->post_processing_shader = asset_table->shader_instances.at(2);
 
 		std::unique_ptr<World> world = std::make_unique<World>();
 

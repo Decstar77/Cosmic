@@ -14,8 +14,32 @@
 
 namespace cm
 {
+	class GraphicsContext;
+
+	class DXRenderTarget
+	{
+		friend class GraphicsContext;
+
+	public:
+		ID3D11Texture2D* texture = nullptr;
+		ID3D11RenderTargetView* render_target = nullptr;
+		ID3D11ShaderResourceView* shader_view = nullptr;
+
+		void Bind(GraphicsContext *gc, ID3D11DepthStencilView* depthStencilView);
+		void Clear(GraphicsContext *gc, ID3D11DepthStencilView* depthStencilView, const Vec4f &colour);
+
+
+	public:
+		DXRenderTarget() {}
+		~DXRenderTarget() {}
+
+	};
+
+
 	class GraphicsContext
 	{
+		friend class WorldRenderer;
+
 	public:
 		bool InitializeDirectX(HWND window);
 		void Destroy();
@@ -23,6 +47,8 @@ namespace cm
 		void CreateMesh(MeshInstance *instance, EditableMesh *editable_mesh);
 		void CreateShader(ShaderInstance *instance, EditableShader *editable_shader);
 		void CreateTexture(TextureInstance *instance, EditableTexture *edtiable_texture);
+
+		DXRenderTarget CreateRenderTarget(const int32 &width, const int32 &height);
 
 		void Present();
 		void ClearBuffer(const Vec4f &colour);
@@ -51,9 +77,6 @@ namespace cm
 		~GraphicsContext();
 
 	private:
-
-
-	private:
 		int32 CreateMesh(real32 *vertex_data, uint32 vertex_size, uint32 vertex_stride_bytes,
 			uint32 *index_data, uint32 index_count);
 	};
@@ -66,11 +89,17 @@ namespace cm
 
 		void SetMatrices(const Mat4f &view, const Mat4f &proj);
 
+		ShaderInstance post_processing_shader;
+
 	public:
 		WorldRenderer(GraphicsContext *graphics_context);
 		WorldRenderer(const WorldRenderer &) = delete;
 		WorldRenderer &operator=(const WorldRenderer &) = delete;
 		~WorldRenderer();
+
+	private:
+		void UploadLightingInfo(World *world);
+		void RenderQuad();
 
 	private:
 		GraphicsContext *gc;
@@ -79,11 +108,17 @@ namespace cm
 
 		DXConstBuffer lighting_buffer;
 
+		ID3D11RenderTargetView *current_render_target;
+
+		DXRenderTarget offscreen_render_target;
+
+		int32 screen_space_quad_index;
+
+
 		D3D11_VIEWPORT viewport;
 
 		Mat4f view_matrix;
 		Mat4f projection_matrix;
-
 	};
 
 

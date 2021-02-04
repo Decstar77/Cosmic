@@ -325,6 +325,8 @@
     <FxCompile Include="src\rendering\hlsl\debug_line.vert.hlsl" />
     <FxCompile Include="src\rendering\hlsl\basic_pbr.vert.hlsl" />
     <FxCompile Include="src\rendering\hlsl\basic_pbr.pixl.hlsl" />
+    <FxCompile Include="src\rendering\hlsl\post_processing.pixl.hlsl" />
+    <FxCompile Include="src\rendering\hlsl\post_processing.vert.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="src\notes.txt" />
