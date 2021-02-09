@@ -33,7 +33,18 @@ cbuffer LightingInfo : register(b0)
 }
 
 Texture2D tex : register(t0);
+Texture2D shadowMap : register(t1);
+
 SamplerState splr : register(s0);
+SamplerState shadowSplr : register(s1);
+
+struct VSInput
+{
+	float3 world_position : WorldPos;
+	float2 texture_coords : TexCord;
+	float3 normal : Normal;
+	float4 lightSpacePosition : LightSpacePos;
+};
 
 struct DirectionalLight
 {
@@ -69,6 +80,7 @@ struct PixelInfo
 	float3 normal;
 	float3 worldPos;
 	float3 toView;
+	float4 pixPoslightSpacePosition;
 };
 
 #define PI 3.14159265359
@@ -113,6 +125,30 @@ float3 fresnelSchlick(float cosTheta, float3 F0)
 	return F0 + (1.0 - F0) * pow(max(1.0 - cosTheta, 0.0), 5.0);
 }
 // ----------------------------------------------------------------------------
+float ShadowCalculation(float4 pixlPosLightSpace)
+{
+	// Perspective divide [-1, 1]
+	float3 projCoords = pixlPosLightSpace.xyz / pixlPosLightSpace.w;
+
+	// To text coords [0, 1]
+	projCoords.x = pixlPosLightSpace.x / pixlPosLightSpace.w / 2.0f + 0.5f;
+	projCoords.y = -pixlPosLightSpace.y / pixlPosLightSpace.w / 2.0f + 0.5f;
+
+	float bias = 0.005;
+	float shadow = 1.0f;
+
+	if ((saturate(projCoords.x) == projCoords.x)
+		&& (saturate(projCoords.y) == projCoords.y))
+	{
+		float closestDepth = shadowMap.Sample(shadowSplr, projCoords.xy).r;
+		float currentDepth = projCoords.z;
+
+		shadow = (currentDepth - bias) > closestDepth ? 0.0f : 1.0f;
+	}
+
+	return shadow;
+}
+// ----------------------------------------------------------------------------
 float3 CalculateDirectionalLighting(PixelInfo info, Material material, DirectionalLight light)
 {
 	// calculate per-light radiance
@@ -150,8 +186,10 @@ float3 CalculateDirectionalLighting(PixelInfo info, Material material, Direction
 	// scale light by NdotL
 	float NdotL = max(dot(N, L), 0.0);
 
+	float shadow = ShadowCalculation(info.pixPoslightSpacePosition);
+
 	// note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
-	return (kD * material.albedo / PI + specular) * radiance * NdotL;
+	return (kD * material.albedo / PI + specular) * radiance * NdotL * shadow;
 }
 // ----------------------------------------------------------------------------
 float3 CalculateSpotLighting(PixelInfo info, Material material, SpotLight light)
@@ -247,16 +285,17 @@ float3 CalculatePointLighting(PixelInfo info, Material material, PointLight ligh
 }
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
-float4 main(float3 world_position : WorldPos, float2 texture_coords : TexCord, float3 normal : Normal) : SV_TARGET
+float4 main(VSInput vsInput) : SV_TARGET
 {
 	PixelInfo pinfo;
-	pinfo.normal = normalize(normal);
-	pinfo.worldPos = world_position;
+	pinfo.normal = normalize(vsInput.normal);
+	pinfo.worldPos = vsInput.world_position;
 	pinfo.toView = viewPos - pinfo.worldPos;
+	pinfo.pixPoslightSpacePosition = vsInput.lightSpacePosition;
 
 	Material material;
 	//material.albedo = float3(1, 0, 0);//pow(tex.Sample(splr, texture_coords).rgb, float3(2.2, 2.2, 2.2));
-	material.albedo = pow(tex.Sample(splr, texture_coords).rgb, float3(2.2, 2.2, 2.2));
+	material.albedo = pow(tex.Sample(splr, vsInput.texture_coords).rgb, float3(2.2, 2.2, 2.2));
 	material.roughness = 0.25f;
 	material.metallic = 0.0f;
 	material.F0 = float3(0.04, 0.04, 0.04); //(like plastic)

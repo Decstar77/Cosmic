@@ -25,7 +25,7 @@ namespace cm
 			projection_matrix = PerspectiveLH(DegToRad(dfovy), aspect, znear, zfar);
 			break;
 		case CameraType::ORTHOGRAPHIC:
-			projection_matrix = Orthographic(left, right, top, bottom, near_plane, far_plane);
+			projection_matrix = OrthographicLH(left, right, top, bottom, near_plane, far_plane);
 			break;
 		default:
 			break;
@@ -58,7 +58,7 @@ namespace cm
 		return ray;
 	}
 
-	Camera::Camera() : camera_type(CameraType::PERSPECTIVE), dfovy(45.0f), aspect(1.77f), znear(0.05), zfar(1000.0f)
+	Camera::Camera() : camera_type(CameraType::PERSPECTIVE), dfovy(45.0f), aspect(1.77f), znear(0.3f), zfar(1000.0f)
 	{
 		type = EntityType::CAMERA;
 		if (!active_camera)

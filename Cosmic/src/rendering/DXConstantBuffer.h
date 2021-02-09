@@ -25,6 +25,9 @@ namespace cm
 		void Copy(const std::vector<uint8> &data);
 
 		inline void ResetCopyPtr() { copy_ptr = 0; }
+
+		void CopyInMat4f(const Mat4f &in);
+
 		void CopyInVec3f(const Vec3f &in);
 		void CopyInVec4f(const Vec4f &in);
 		void CopyInVec3i(const Vec3i &in);

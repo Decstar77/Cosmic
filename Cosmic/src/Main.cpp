@@ -42,6 +42,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		std::unique_ptr<DirectXDebugRenderer> debug_renderer = std::make_unique<DirectXDebugRenderer>(graphics_context.get());
 		std::unique_ptr<Debug> debug = std::make_unique<Debug>(debug_renderer.get());
 		std::unique_ptr<Editor> editor = std::make_unique<Editor>(graphics_context.get());
+		world_renderer->debug_renderer = debug_renderer.get();
 
 		std::unique_ptr<JobSystem> job_system = std::make_unique<JobSystem>(); // @TODO: Remove singloton
 
@@ -78,19 +79,18 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		asset_loader->LoadShader("../res/complied_shaders/post_processing.vert.cso", "../res/complied_shaders/post_processing.pixl.cso");
 		graphics_context->CreateShader(&asset_table->shader_instances.at(2), &asset_table->editable_shaders.at(2));
 
+		asset_loader->LoadShader("../res/complied_shaders/depth_writer.vert.cso", "../res/complied_shaders/depth_writer.pixl.cso");
+		graphics_context->CreateShader(&asset_table->shader_instances.at(3), &asset_table->editable_shaders.at(3));
+
 		asset_loader->LoadTexture("../res/PolygonScifi_01_A.png");
 		graphics_context->CreateTexture(&asset_table->texture_instances.at(0), &asset_table->editable_textures.at(0));
 
+		debug_renderer->shader_instance = asset_table->shader_instances.at(1);
 		world_renderer->post_processing_shader = asset_table->shader_instances.at(2);
+		world_renderer->depth_writer_shader = asset_table->shader_instances.at(3);
 
 		std::unique_ptr<World> world = std::make_unique<World>();
-
-		//std::unique_ptr<WorldRenderer> world_renderer = std::make_unique<WorldRenderer>();
-
 		game_state.SetActiveWorld(world.get());
-
-		debug_renderer->shader_instance = asset_table->shader_instances.at(1);
-
 
 		bool in_editor = false;
 		editor->Start();
@@ -159,16 +159,13 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 
 			sound_system->SetListenerTransform(Camera::GetActiveCamera()->GetGlobalTransform());
 
-			graphics_context->ClearBuffer(Vec4f(0.45f, 0.65f, 0.85f, 1.0f));
-
-			debug_renderer->SetMatrices(Camera::GetActiveCamera()->CalculateViewMatrix(), Camera::GetActiveCamera()->CalculateProjectionMatrix());
+			debug_renderer->SetMatrices(Camera::GetActiveCamera()->CalculateViewMatrix(),
+				Camera::GetActiveCamera()->CalculateProjectionMatrix());
 			world_renderer->SetMatrices(Camera::GetActiveCamera()->CalculateViewMatrix(),
 				Camera::GetActiveCamera()->CalculateProjectionMatrix());
 
 			world_renderer->RenderWorld(world.get());
 			//world_renderer->Render(world.get());
-
-			debug_renderer->RenderAndFlush();
 
 			if (in_editor)
 			{

@@ -16,7 +16,7 @@ namespace cm
 		sd.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
 		sd.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
 
-		sd.SampleDesc.Count = 1;//4;
+		sd.SampleDesc.Count = msaa_sample_count;//4;
 		sd.SampleDesc.Quality = 0;
 
 		sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
@@ -61,8 +61,6 @@ namespace cm
 
 		context->OMSetDepthStencilState(ds_state, 1);
 
-
-
 		RECT window_rect;
 		GetClientRect(window, &window_rect);
 
@@ -73,7 +71,7 @@ namespace cm
 		depth_ds.MipLevels = 1;
 		depth_ds.ArraySize = 1;
 		depth_ds.Format = DXGI_FORMAT_D32_FLOAT;
-		depth_ds.SampleDesc.Count = 1;//4;
+		depth_ds.SampleDesc.Count = msaa_sample_count;
 		depth_ds.SampleDesc.Quality = 0;
 		depth_ds.Usage = D3D11_USAGE_DEFAULT;
 		depth_ds.BindFlags = D3D11_BIND_DEPTH_STENCIL;
@@ -82,10 +80,15 @@ namespace cm
 
 		D3D11_DEPTH_STENCIL_VIEW_DESC depth_view_dsc = {};
 		depth_view_dsc.Format = DXGI_FORMAT_D32_FLOAT;
-		depth_view_dsc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
-		//depth_view_dsc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DMS;
+		depth_view_dsc.ViewDimension = IsMSAAEnabled() ? D3D11_DSV_DIMENSION_TEXTURE2DMS : D3D11_DSV_DIMENSION_TEXTURE2D;
 		depth_view_dsc.Texture2D.MipSlice = 0;
 		DXCHECK(device->CreateDepthStencilView(depth_texture, &depth_view_dsc, &depth_target));
+
+		swapchain_render_target.depth_target = depth_target;
+		swapchain_render_target.depth_texture = depth_texture;
+		swapchain_render_target.render_target = render_target;
+		swapchain_render_target.texture = nullptr;
+		swapchain_render_target.shader_view = nullptr;
 
 		ID3D11RasterizerState *rs_state = nullptr;
 		D3D11_RASTERIZER_DESC rs_desc = {};
@@ -264,48 +267,7 @@ namespace cm
 		instance->graphics_table_index = index;
 	}
 
-	cm::DXRenderTarget GraphicsContext::CreateRenderTarget(const int32 &width, const int32 &height)
-	{
-		DXRenderTarget dx_render_target;
 
-		D3D11_TEXTURE2D_DESC texture_desc = {};
-		texture_desc.Width = width;
-		texture_desc.Height = height;
-		texture_desc.MipLevels = 1;
-		texture_desc.ArraySize = 1;
-		texture_desc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-		texture_desc.SampleDesc.Count = 1;
-		texture_desc.SampleDesc.Quality = 0;
-		texture_desc.Usage = D3D11_USAGE_DEFAULT;
-		texture_desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-		texture_desc.CPUAccessFlags = 0;
-		texture_desc.MiscFlags = 0;
-
-		DXCHECK(device->CreateTexture2D(&texture_desc, NULL, &dx_render_target.texture));
-
-		// ----------------------------------------------------------------------------
-		// ----------------------------------------------------------------------------
-
-		D3D11_RENDER_TARGET_VIEW_DESC render_target_desc = {};
-		render_target_desc.Format = texture_desc.Format;
-		render_target_desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D; // D3D11_RTV_DIMENSION_TEXTURE2DMS
-		render_target_desc.Texture2D.MipSlice = 0;
-
-		DXCHECK(device->CreateRenderTargetView(dx_render_target.texture, &render_target_desc, &dx_render_target.render_target));
-
-		// ----------------------------------------------------------------------------
-		// ----------------------------------------------------------------------------
-
-		D3D11_SHADER_RESOURCE_VIEW_DESC shader_view_desc = {};
-		shader_view_desc.Format = texture_desc.Format;
-		shader_view_desc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-		shader_view_desc.Texture2D.MostDetailedMip = 0;
-		shader_view_desc.Texture2D.MipLevels = 1;
-
-		DXCHECK(device->CreateShaderResourceView(dx_render_target.texture, &shader_view_desc, &dx_render_target.shader_view));
-
-		return dx_render_target;
-	}
 
 	void GraphicsContext::Present()
 	{
@@ -412,53 +374,33 @@ namespace cm
 	{
 		GETDEUBBGER();
 
-		Mat4f const_buffer_data;
-		const_buffer_data = view_matrix * projection_matrix;
-		const_buffer_data = Transpose(const_buffer_data);
-
-		DXINFO(gc->context->UpdateSubresource(const_buffer, 0, nullptr, const_buffer_data.ptr, 0, 0));
-
 		D3D11_MAPPED_SUBRESOURCE resource;
 
 		DXCHECK(gc->context->Map(vertex_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &resource));
 		memcpy(resource.pData, vertex_data, vertex_size_bytes);
 		DXINFO(gc->context->Unmap(vertex_buffer, 0));
 
-		RECT rect;
-		GetClientRect(gc->window, &rect);
-
-		real32 window_width = (real32)(rect.right - rect.left);
-		real32 window_height = (real32)(rect.bottom - rect.top);
-
-		D3D11_VIEWPORT viewport;
-		viewport.Width = window_width;
-		viewport.Height = window_height;
-		viewport.MinDepth = 0;
-		viewport.MaxDepth = 1;
-		viewport.TopLeftX = 0;
-		viewport.TopLeftY = 0;
-
-		DXShader *shader = gc->shader_areana.Get(shader_instance.graphics_table_index);
-		shader->Bind(gc);
-
-		DXINFO(gc->context->VSSetShader(shader->vs_shader, nullptr, 0));
-		DXINFO(gc->context->PSSetShader(shader->ps_shader, nullptr, 0));
-
-		DXINFO(gc->context->IASetInputLayout(shader->layout));
-
-		DXINFO(gc->context->VSSetConstantBuffers(0, 1, &const_buffer));
-
 		uint32 offset = 0;
 		uint32 vertex_stride_bytes = vertex_stride * sizeof(real32);
 		DXINFO(gc->context->IASetVertexBuffers(0, 1, &vertex_buffer, &vertex_stride_bytes, &offset));
 
-		DXINFO(gc->context->RSSetViewports(1, &viewport));
+		//////////////////////////////////
+		//////////////////////////////////
+
+		DXShader *shader = gc->shader_areana.Get(shader_instance.graphics_table_index);
+		shader->Bind(gc);
+
+		//////////////////////////////////
+		//////////////////////////////////
 
 		DXINFO(gc->context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST));
 
-		DXINFO(gc->context->OMSetRenderTargets(1, &gc->render_target, gc->depth_target));
-
 		DXINFO(gc->context->Draw(vertex_count, 0));
+
+		DXINFO(gc->context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST));
+
+		//////////////////////////////////
+		//////////////////////////////////
 
 		ZeroMemory(vertex_data, vertex_size_bytes);
 		next_vertex_index = 0;
@@ -544,9 +486,7 @@ namespace cm
 
 		AssetTable *asset_table = GameState::GetAssetTable();
 
-		Material material;
-		material.shader = asset_table->shader_instances.at(0);
-		material.textures.push_back(asset_table->texture_instances.at(0));
+		//material.shader = depth_writer_shader;
 
 		std::vector<Entity *> renderable_entities = world->CreateCollection([](Entity *entity) {
 			return entity->active && entity->should_draw && entity->GetMesh().IsOnGPU();
@@ -556,42 +496,66 @@ namespace cm
 
 		DXINFO(gc->context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST)); // @TODO: once off
 
-		offscreen_render_target.Clear(gc, gc->depth_target, Vec4f(1));
+		ID3D11ShaderResourceView* nulltexture[] = { nullptr, nullptr };
+		DXINFO(gc->context->PSSetShaderResources(0, 2, nulltexture));
 
-		ID3D11ShaderResourceView* nulltexture[] = { nullptr };
-		DXINFO(gc->context->PSSetShaderResources(0, 1, nulltexture));
-		DXINFO(gc->context->OMSetRenderTargets(1, &offscreen_render_target.render_target, gc->depth_target)); // @TODO: once off ?
+		std::vector<Entity *> direction_lights = world->CreateCollection([](Entity *entity) {
+			return entity->active && entity->GetType() == EntityType::DIRECTIONALLIGHT;
+		});
 
-		for (GridCell &cell : world->grid.cells)
+		if (direction_lights.size() > 0)
 		{
-			if (!cell.empty)
-			{
-				RenderMesh(asset_table->FindMeshInstance("cube"), material, Transform(cell.center));
-			}
+			ShadowPass(renderable_entities, (DirectionalLight*)direction_lights.at(0));
 		}
+
+		gc->swapchain_render_target.Clear(gc, Vec4f(1.0f));
+		gc->swapchain_render_target.Bind(gc);
+
+		Material material;
+		material.shader = asset_table->shader_instances.at(0);
+		material.albedo_texture = asset_table->texture_instances.at(0);
+
+		DXINFO(gc->context->PSSetShaderResources(1, 1, &shadow_render_target.shader_view));
+		DXINFO(gc->context->PSSetSamplers(1, 1, &shadow_sampler));
+
+		D3D11_VIEWPORT current_viewport = viewport;
+
+		DXINFO(gc->context->RSSetViewports(1, &current_viewport));
+
+		//offscreen_render_target.Clear(gc, Vec4f(0.45f, 0.65f, 0.85f, 1.0f));
+		//offscreen_render_target.Bind(gc);
 
 		for (Entity *entity : renderable_entities)
 		{
 			RenderMesh(entity->GetMesh(), material, entity->GetGlobalTransform());
 		}
 
-		DXINFO(gc->context->OMSetRenderTargets(1, &gc->render_target, gc->depth_target)); // @TODO: once off ?
+		if (debug_renderer)
+		{
+			debug_renderer->RenderAndFlush();
+		}
+
+		current_viewport.Width = 480;
+		current_viewport.Height = 480;
+		current_viewport.MinDepth = 0;
+		current_viewport.MaxDepth = 1;
+		current_viewport.TopLeftX = 0;
+		current_viewport.TopLeftY = 0;
+
+		DXINFO(gc->context->RSSetViewports(1, &current_viewport));
+
+		//gc->swapchain_render_target.Bind(gc);
+		//DXINFO(gc->context->PSSetShaderResources(0, 1, &offscreen_render_target.shader_view));
 
 		DXShader *shader = gc->shader_areana.Get(post_processing_shader.graphics_table_index);
 		shader->Bind(gc);
-
-		DXINFO(gc->context->PSSetShaderResources(0, 1, &offscreen_render_target.shader_view));
-
+		DXINFO(gc->context->PSSetShaderResources(0, 1, &shadow_render_target.shader_view));
 		RenderQuad();
 	}
 
 	void WorldRenderer::RenderQuad()
 	{
 		GETDEUBBGER();
-
-
-
-		DXINFO(gc->context->RSSetViewports(1, &viewport)); // @TODO: once off
 
 		//////////////////////////////////
 		//////////////////////////////////
@@ -607,6 +571,46 @@ namespace cm
 
 		DXINFO(gc->context->DrawIndexed(mesh->index_count, 0, 0));
 	}
+
+	void WorldRenderer::ShadowPass(const std::vector<Entity*> &entities, DirectionalLight *light)
+	{
+		GETDEUBBGER();
+
+		Material material;
+		material.shader = depth_writer_shader;
+
+		shadow_render_target.Clear(gc, Vec4f(0.0f));
+		shadow_render_target.Bind(gc);
+
+		D3D11_VIEWPORT current_viewport;
+		current_viewport.Width = (real32)shadow_render_target.width;
+		current_viewport.Height = (real32)shadow_render_target.height;
+		current_viewport.MinDepth = 0;
+		current_viewport.MaxDepth = 1;
+		current_viewport.TopLeftX = 0;
+		current_viewport.TopLeftY = 0;
+
+		Mat4f old_view = view_matrix;
+		Mat4f old_proj = projection_matrix;
+
+		view_matrix = light->CalculateLightView();
+		projection_matrix = light->CalculateLightProjection();
+
+		vs_lighting_buffer.ResetCopyPtr();
+		vs_lighting_buffer.CopyInMat4f(Transpose(view_matrix * projection_matrix));
+		vs_lighting_buffer.Upload(gc);
+
+		DXINFO(gc->context->RSSetViewports(1, &current_viewport));
+
+		for (Entity *entity : entities)
+		{
+			RenderMesh(entity->GetMesh(), material, entity->GetGlobalTransform());
+		}
+
+		view_matrix = old_view;
+		projection_matrix = old_proj;
+	}
+
 	void WorldRenderer::RenderMesh(const MeshInstance &mesh_instance, const Material &material, const Transform &transform)
 	{
 		// @TODO: Error checking
@@ -645,11 +649,6 @@ namespace cm
 		//////////////////////////////////
 		//////////////////////////////////
 
-		DXINFO(gc->context->RSSetViewports(1, &viewport)); // @TODO: once off
-
-		//////////////////////////////////
-		//////////////////////////////////
-
 		ASSERT(mesh_instance.IsOnGPU(), "Mesh is not on GPU");
 		DXMesh *mesh = gc->mesh_areana.Get(mesh_instance.graphics_table_index);
 		mesh->Bind(gc);
@@ -657,13 +656,11 @@ namespace cm
 		//////////////////////////////////
 		//////////////////////////////////
 
-		ASSERT(material.textures.size() < gc->total_texture_resigters, "To many textures !!");
-
-		for (int32 i = 0; i < material.textures.size(); i++)
+		if (material.albedo_texture.IsValid())
 		{
-			uint32 index = static_cast<uint32>(material.textures.at(i).graphics_table_index);
+			uint32 index = static_cast<uint32>(material.albedo_texture.graphics_table_index);
 			DXTexture *texture = gc->texture_areana.Get(index);
-			texture->Bind(gc, i);
+			texture->Bind(gc, 0);
 		}
 
 		//////////////////////////////////
@@ -702,17 +699,40 @@ namespace cm
 		//----------------------------
 		//----------------------------
 
-		lighting_buffer.Create(gc, (uint32)(sizeof(Vec3f) * 64.0f));
-		lighting_buffer.ResetCopyPtr();
-		lighting_buffer.CopyInVec3f(Vec3f(1.0f));
-		lighting_buffer.CopyInVec3f(Vec3f(0.0f));
-		lighting_buffer.CopyInVec3f(Vec3f(0.0f));
-		lighting_buffer.CopyInVec3f(Vec3f(0.0f));
-		lighting_buffer.Upload(gc);
-		//lbuffer.CopyAndUpload(gc, { 1.0f, 1.0f, 1.0f, 0.0f,  0.1f, 0.1f, 0.2f, 99.0f });
-		lighting_buffer.Bind(gc, ShaderStage::PIXEL_SHADER, 0);
+		ps_lighting_buffer.Create(gc, (uint32)(sizeof(Vec3f) * 64.0f));
+		ps_lighting_buffer.ResetCopyPtr();
+		ps_lighting_buffer.CopyInVec3f(Vec3f(1.0f));
+		ps_lighting_buffer.CopyInVec3f(Vec3f(0.0f));
+		ps_lighting_buffer.CopyInVec3f(Vec3f(0.0f));
+		ps_lighting_buffer.CopyInVec3f(Vec3f(0.0f));
+		ps_lighting_buffer.Upload(gc);
+		ps_lighting_buffer.Bind(gc, ShaderStage::PIXEL_SHADER, 0);
 
-		//DXINFO(gc->context->PSSetConstantBuffers(0, 1, &lighting_buffer));
+
+		vs_lighting_buffer.Create(gc, sizeof(Mat4f));
+		vs_lighting_buffer.ResetCopyPtr();
+		vs_lighting_buffer.CopyInMat4f(Mat4f(1));
+		vs_lighting_buffer.Upload(gc);
+		vs_lighting_buffer.Bind(gc, ShaderStage::VERTEX_SHADER, 1);
+
+		//----------------------------
+		//----------------------------
+		//----------------------------
+
+		D3D11_SAMPLER_DESC shadow_sampler_desc = {};
+		shadow_sampler_desc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+		shadow_sampler_desc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+		shadow_sampler_desc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+		shadow_sampler_desc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+
+		DXCHECK(gc->device->CreateSamplerState(&shadow_sampler_desc, &shadow_sampler));
+		DXINFO(gc->context->PSSetSamplers(1, 1, &shadow_sampler));
+
+		//----------------------------
+		//----------------------------
+		//----------------------------
+
+
 
 		// @TODO: Use platform
 		RECT rect;
@@ -741,7 +761,9 @@ namespace cm
 
 		screen_space_quad_index = gc->CreateMesh(quad_data, 32, 8 * sizeof(real32), index_data, 6);
 
-		offscreen_render_target = gc->CreateRenderTarget((uint32)window_width, (uint32)window_height);
+		offscreen_render_target.Create(gc, (uint32)window_width, (uint32)window_height);
+		//shadow_render_target.Create(gc, (uint32)window_width, (uint32)window_height);
+		shadow_render_target.Create(gc, 4096, 4096);
 	}
 
 	WorldRenderer::~WorldRenderer()
@@ -774,9 +796,9 @@ namespace cm
 		Vec3f view_pos = Camera::GetActiveCamera()->GetGlobalPosition();
 		Vec3<int32> light_counts = Vec3i(directional_light_count, spot_light_count, point_light_count);
 
-		lighting_buffer.ResetCopyPtr();
-		lighting_buffer.CopyInVec3f(view_pos);
-		lighting_buffer.CopyInVec3i(light_counts);
+		ps_lighting_buffer.ResetCopyPtr();
+		ps_lighting_buffer.CopyInVec3f(view_pos);
+		ps_lighting_buffer.CopyInVec3i(light_counts);
 
 		{
 			int32 directional_light_index = 0;
@@ -787,13 +809,13 @@ namespace cm
 
 				Transform t = directional_light->GetGlobalTransform();
 
-				lighting_buffer.CopyInVec3f(t.GetBasis().forward);
-				lighting_buffer.CopyInVec3f(directional_light->colour * directional_light->strength);
+				ps_lighting_buffer.CopyInVec3f(t.GetBasis().forward);
+				ps_lighting_buffer.CopyInVec3f(directional_light->colour * directional_light->strength);
 			}
 			for (; directional_light_index < max_directional_light_count; directional_light_index++)
 			{
-				lighting_buffer.CopyInVec3f(Vec3f(0.0f));
-				lighting_buffer.CopyInVec3f(Vec3f(0.0f));
+				ps_lighting_buffer.CopyInVec3f(Vec3f(0.0f));
+				ps_lighting_buffer.CopyInVec3f(Vec3f(0.0f));
 			}
 		}
 		{
@@ -808,15 +830,15 @@ namespace cm
 				Vec4f pos_inner = Vec4f(t.position, Cos(DegToRad(spot_light->innner)));
 				Vec4f dir_outter = Vec4f(t.GetBasis().forward, Cos(DegToRad(spot_light->outter)));
 
-				lighting_buffer.CopyInVec4f(pos_inner);
-				lighting_buffer.CopyInVec4f(dir_outter);
-				lighting_buffer.CopyInVec3f(spot_light->colour * spot_light->strength);
+				ps_lighting_buffer.CopyInVec4f(pos_inner);
+				ps_lighting_buffer.CopyInVec4f(dir_outter);
+				ps_lighting_buffer.CopyInVec3f(spot_light->colour * spot_light->strength);
 			}
 			for (; spot_light_index < max_spot_light_count; spot_light_index++)
 			{
-				lighting_buffer.CopyInVec4f(Vec4f(0.0f));
-				lighting_buffer.CopyInVec4f(Vec4f(0.0f));
-				lighting_buffer.CopyInVec3f(Vec3f(0.0f));
+				ps_lighting_buffer.CopyInVec4f(Vec4f(0.0f));
+				ps_lighting_buffer.CopyInVec4f(Vec4f(0.0f));
+				ps_lighting_buffer.CopyInVec3f(Vec3f(0.0f));
 			}
 		}
 		{
@@ -825,33 +847,20 @@ namespace cm
 			{
 				PointLight *point_light =
 					reinterpret_cast<PointLight *>(point_lights.at(point_light_index));
-				lighting_buffer.CopyInVec3f(point_light->GetGlobalPosition());
-				lighting_buffer.CopyInVec3f(point_light->colour * point_light->strength);
+				ps_lighting_buffer.CopyInVec3f(point_light->GetGlobalPosition());
+				ps_lighting_buffer.CopyInVec3f(point_light->colour * point_light->strength);
 			}
 			for (; point_light_index < max_point_light_count; point_light_index++)
 			{
-				lighting_buffer.CopyInVec3f(Vec3f(0.0f));
-				lighting_buffer.CopyInVec3f(Vec3f(0.0f));
+				ps_lighting_buffer.CopyInVec3f(Vec3f(0.0f));
+				ps_lighting_buffer.CopyInVec3f(Vec3f(0.0f));
 			}
 		}
 
-		lighting_buffer.Upload(gc);
+		ps_lighting_buffer.Upload(gc);
 	}
 
 
-	void DXRenderTarget::Bind(GraphicsContext *gc, ID3D11DepthStencilView* depthStencilView)
-	{
-		GETDEUBBGER();
-		DXINFO(gc->context->OMSetRenderTargets(1, &render_target, depthStencilView));
-	}
 
-	void DXRenderTarget::Clear(GraphicsContext *gc, ID3D11DepthStencilView* depthStencilView, const Vec4f &colour)
-	{
-		GETDEUBBGER();
-		DXINFO(gc->context->ClearRenderTargetView(render_target, colour.ptr));
-
-		gc->context->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
-
-	}
 
 } // namespace cm

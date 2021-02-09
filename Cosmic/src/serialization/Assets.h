@@ -65,6 +65,10 @@ namespace cm
 
 		int32 asset_table_index = -1;
 		int32 graphics_table_index = -1;
+
+		inline bool IsOnGPU() const { return graphics_table_index >= 0; }
+		inline bool IsOnRAM() const { return asset_table_index >= 0; }
+		inline bool IsValid() const { return IsOnRAM() && IsOnGPU(); }
 	};
 
 
@@ -87,7 +91,11 @@ namespace cm
 	struct Material
 	{
 		ShaderInstance shader;
-		std::vector<TextureInstance> textures;
+		TextureInstance albedo_texture;
+		TextureInstance roughness_texture;
+		TextureInstance metallic_texture;
+		TextureInstance normal_texture;
+		TextureInstance ao_texture;
 	};
 
 

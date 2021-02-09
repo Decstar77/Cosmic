@@ -15,6 +15,20 @@ namespace cm
 		this->data = data;
 	}
 
+	void DXConstBuffer::CopyInMat4f(const Mat4f &in)
+	{
+		ASSERT(copy_ptr < data.size() / 4, "DXConstBuffer::CopyInVec3f buffer overrun");
+
+		real32 *ptr = reinterpret_cast<real32*>(data.data());
+
+		for (int32 i = 0; i < 16; i++)
+		{
+			ptr[copy_ptr] = in.ptr[i];
+			copy_ptr++;
+		}
+
+	}
+
 	void DXConstBuffer::CopyInVec3f(const Vec3f &in)
 	{
 		ASSERT(copy_ptr < data.size() / 4, "DXConstBuffer::CopyInVec3f buffer overrun");

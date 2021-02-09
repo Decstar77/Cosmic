@@ -84,20 +84,27 @@ namespace cm
 
 	void AssetLoader::LoadShader(const String &vertex_path, const String &pixel_path)
 	{
-		asset_table->shader_instances.emplace_back();
-		asset_table->editable_shaders.emplace_back(
+		int32 index = static_cast<int32>(asset_table->shader_instances.size());
+
+		ShaderInstance &inst = asset_table->shader_instances.emplace_back();
+		EditableShader &shad = asset_table->editable_shaders.emplace_back(
 			Platform::LoadFile(vertex_path),
 			Platform::LoadFile(pixel_path)
 		);
+
+		inst.asset_table_index = index;
 	}
 
 	void AssetLoader::LoadTexture(const String &path)
 	{
+		int32 index = static_cast<int32>(asset_table->texture_instances.size());
+
 		TextureInstance &inst = asset_table->texture_instances.emplace_back();
 		EditableTexture &text = asset_table->editable_textures.emplace_back(
 			Platform::LoadFile(path)
 		);
 
+		inst.asset_table_index = index;
 		inst.meta_data = text.meta_data;
 	}
 

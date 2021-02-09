@@ -130,6 +130,7 @@
     <ClInclude Include="src\generated\IntrospectedEntity.h" />
     <ClInclude Include="src\rendering\DXConstantBuffer.h" />
     <ClInclude Include="src\rendering\DirectX11.h" />
+    <ClInclude Include="src\rendering\DXRenderTarget.h" />
     <ClInclude Include="src\rendering\DXShader.h" />
     <ClInclude Include="src\rendering\DXTexture.h" />
     <ClInclude Include="src\rendering\GraphicsContext.h" />
@@ -185,6 +186,7 @@
     <ClCompile Include="src\core\entities\Particles.cpp" />
     <ClCompile Include="src\core\Grid.cpp" />
     <ClCompile Include="src\core\JobSystem.cpp" />
+    <ClCompile Include="src\rendering\DXRenderTarget.cpp" />
     <ClCompile Include="src\rendering\DXShader.cpp" />
     <ClCompile Include="src\rendering\DXTexture.cpp" />
     <ClCompile Include="src\rendering\GraphicsContext.cpp" />
@@ -252,6 +254,22 @@
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)/res/complied_shaders/%(Filename).cso</ObjectFileOutput>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="src\rendering\hlsl\depth_writer.pixl.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)/res/complied_shaders/%(Filename).cso</ObjectFileOutput>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)/res/complied_shaders/%(Filename).cso</ObjectFileOutput>
+    </FxCompile>
+    <FxCompile Include="src\rendering\hlsl\depth_writer.vert.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)/res/complied_shaders/%(Filename).cso</ObjectFileOutput>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)/res/complied_shaders/%(Filename).cso</ObjectFileOutput>
     </FxCompile>
     <FxCompile Include="src\rendering\hlsl\post_processing.pixl.hlsl">
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>

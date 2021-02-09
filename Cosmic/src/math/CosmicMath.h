@@ -2756,7 +2756,7 @@ namespace cm
 	}
 
 	template <typename T>
-	inline constexpr Mat4<T> Orthographic(const T &left, const T &right, const T &top, const T &bottom, const T &_near, const T &_far)
+	inline constexpr Mat4<T> OrthographicRH(const T &left, const T &right, const T &top, const T &bottom, const T &_near, const T &_far)
 	{
 		Mat4<T> result(1);
 
@@ -2764,6 +2764,23 @@ namespace cm
 		result.row1 = Vec4<T>(static_cast<T>(0), static_cast<T>(2) / (top - bottom), static_cast<T>(0), static_cast<T>(0));
 		result.row2 = Vec4<T>(static_cast<T>(0), static_cast<T>(0), static_cast<T>(-2) / (_far - _near), static_cast<T>(0));
 		result.row3 = Vec4<T>(-(right + left) / (right - left), -(top + bottom) / (top - bottom), -(_far + _near) / (_far - _near), static_cast<T>(1));
+
+		return result;
+	}
+
+	template <typename T>
+	inline constexpr Mat4<T> OrthographicLH(const T &left, const T &right, const T &top, const T &bottom, const T &_near, const T &_far)
+	{
+		Mat4<T> result(1);
+
+		result.row0 = Vec4<T>(static_cast<T>(2) / (right - left), static_cast<T>(0), static_cast<T>(0), static_cast<T>(0));
+		result.row1 = Vec4<T>(static_cast<T>(0), static_cast<T>(2) / (top - bottom), static_cast<T>(0), static_cast<T>(0));
+		// @NOTE: The '1' in this row in actaully d3d, in openg it would be 2 due to clip space being -1 to 1. I've leave it though
+		result.row2 = Vec4<T>(static_cast<T>(0), static_cast<T>(0), static_cast<T>(1) / (_far - _near), static_cast<T>(0));
+		result.row3 = Vec4<T>(-(right + left) / (right - left),
+			-(top + bottom) / (top - bottom),
+			_near / (_near - _far),
+			static_cast<T>(1));
 
 		return result;
 	}
