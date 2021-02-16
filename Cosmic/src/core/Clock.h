@@ -47,4 +47,21 @@ namespace cm
 		std::chrono::time_point<std::chrono::steady_clock> start_time;
 		std::chrono::time_point<std::chrono::steady_clock> end_time;
 	};
+
+	class ProfilerClock
+	{
+	public:
+		static std::unordered_map<String, TimeResult> time_results;
+
+	public:
+		ProfilerClock(const String &name);
+		~ProfilerClock();
+
+	private:
+		String name;
+		Clock clock;
+	};
+
+#define PROFILE_FUNCTION() ProfilerClock pclock(__FUNCTION__);
+
 }

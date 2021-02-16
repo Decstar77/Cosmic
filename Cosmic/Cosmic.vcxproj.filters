@@ -325,6 +325,9 @@
     <ClCompile Include="src\rendering\DXRenderTarget.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\core\Clock.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="src\rendering\hlsl\debug_line.pixl.hlsl" />

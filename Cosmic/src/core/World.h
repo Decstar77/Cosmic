@@ -73,6 +73,9 @@ namespace cm
 	public:
 		AssetTable *asset_table; // @TODO: Unique ptr
 
+		inline static real32 light_size = 0.07f;
+		inline static real32 blocker_size = 0.07f;
+
 	public:
 
 		static World* GetActiveWorld();

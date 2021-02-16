@@ -90,7 +90,7 @@ namespace cm
 		swapchain_render_target.texture = nullptr;
 		swapchain_render_target.shader_view = nullptr;
 
-		ID3D11RasterizerState *rs_state = nullptr;
+
 		D3D11_RASTERIZER_DESC rs_desc = {};
 		rs_desc.FillMode = D3D11_FILL_SOLID;
 		rs_desc.CullMode = D3D11_CULL_BACK;
@@ -102,10 +102,22 @@ namespace cm
 		rs_desc.MultisampleEnable = FALSE;
 		rs_desc.AntialiasedLineEnable = FALSE;
 
-		DXCHECK(device->CreateRasterizerState(&rs_desc, &rs_state));
+		DXCHECK(device->CreateRasterizerState(&rs_desc, &rs_standard_state));
 
-		context->RSSetState(rs_state);
+		context->RSSetState(rs_standard_state);
 
+		rs_desc = {};
+		rs_desc.FillMode = D3D11_FILL_SOLID;
+		rs_desc.CullMode = D3D11_CULL_FRONT;
+		rs_desc.FrontCounterClockwise = FALSE;
+		rs_desc.DepthBias = 0;
+		rs_desc.DepthBiasClamp = 1.0f;
+		rs_desc.SlopeScaledDepthBias = 0.0f;
+		rs_desc.DepthClipEnable = TRUE;
+		rs_desc.MultisampleEnable = FALSE;
+		rs_desc.AntialiasedLineEnable = FALSE;
+
+		DXCHECK(device->CreateRasterizerState(&rs_desc, &rs_shadow_state));
 		return true;
 	}
 
@@ -271,6 +283,7 @@ namespace cm
 
 	void GraphicsContext::Present()
 	{
+		PROFILE_FUNCTION();
 		DXCHECK(swapchain->Present(1, 0));
 	}
 
@@ -478,10 +491,10 @@ namespace cm
 		next_vertex_index += vertex_stride;
 	}
 
-
-
 	void WorldRenderer::RenderWorld(World *world)
 	{
+		PROFILE_FUNCTION();
+
 		GETDEUBBGER();
 
 		AssetTable *asset_table = GameState::GetAssetTable();
@@ -598,9 +611,11 @@ namespace cm
 
 		vs_lighting_buffer.ResetCopyPtr();
 		vs_lighting_buffer.CopyInMat4f(Transpose(view_matrix * projection_matrix));
+		vs_lighting_buffer.CopyInMat4f(Transpose(view_matrix));
 		vs_lighting_buffer.Upload(gc);
 
 		DXINFO(gc->context->RSSetViewports(1, &current_viewport));
+		//DXINFO(gc->context->RSSetState(gc->rs_shadow_state));
 
 		for (Entity *entity : entities)
 		{
@@ -609,6 +624,8 @@ namespace cm
 
 		view_matrix = old_view;
 		projection_matrix = old_proj;
+
+		//DXINFO(gc->context->RSSetState(gc->rs_standard_state));
 	}
 
 	void WorldRenderer::RenderMesh(const MeshInstance &mesh_instance, const Material &material, const Transform &transform)
@@ -699,9 +716,11 @@ namespace cm
 		//----------------------------
 		//----------------------------
 
-		ps_lighting_buffer.Create(gc, (uint32)(sizeof(Vec3f) * 64.0f));
+		//ps_lighting_buffer.Create(gc, (uint32)(sizeof(Vec3f) * 64));
+		ps_lighting_buffer.Create(gc, (uint32)(sizeof(Vec3f) * 65));
 		ps_lighting_buffer.ResetCopyPtr();
 		ps_lighting_buffer.CopyInVec3f(Vec3f(1.0f));
+		ps_lighting_buffer.CopyInVec4f(Vec4f(0.0f));
 		ps_lighting_buffer.CopyInVec3f(Vec3f(0.0f));
 		ps_lighting_buffer.CopyInVec3f(Vec3f(0.0f));
 		ps_lighting_buffer.CopyInVec3f(Vec3f(0.0f));
@@ -709,8 +728,9 @@ namespace cm
 		ps_lighting_buffer.Bind(gc, ShaderStage::PIXEL_SHADER, 0);
 
 
-		vs_lighting_buffer.Create(gc, sizeof(Mat4f));
+		vs_lighting_buffer.Create(gc, sizeof(Mat4f) * 2);
 		vs_lighting_buffer.ResetCopyPtr();
+		vs_lighting_buffer.CopyInMat4f(Mat4f(1));
 		vs_lighting_buffer.CopyInMat4f(Mat4f(1));
 		vs_lighting_buffer.Upload(gc);
 		vs_lighting_buffer.Bind(gc, ShaderStage::VERTEX_SHADER, 1);
@@ -798,6 +818,8 @@ namespace cm
 
 		ps_lighting_buffer.ResetCopyPtr();
 		ps_lighting_buffer.CopyInVec3f(view_pos);
+		ps_lighting_buffer.CopyInVec4f(Vec4f(GameState::light_size, GameState::blocker_size,
+			GameState::blocker_size, GameState::blocker_size));
 		ps_lighting_buffer.CopyInVec3i(light_counts);
 
 		{

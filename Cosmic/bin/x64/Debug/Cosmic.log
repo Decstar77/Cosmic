@@ -1,2 +1,11 @@
-﻿  compilation object save succeeded; see F:\Telescope\Cosmic\res\complied_shaders\basic_pbr.pixl.cso
+﻿F:\Telescope\Cosmic\Cosmic\src\rendering\hlsl\basic_pbr.pixl.hlsl(243,23-60): warning X3570: gradient instruction used in a loop with varying iteration, attempting to unroll the loop
+F:\Telescope\Cosmic\Cosmic\src\rendering\hlsl\basic_pbr.pixl.hlsl(259,23-60): warning X3570: gradient instruction used in a loop with varying iteration, attempting to unroll the loop
+F:\Telescope\Cosmic\Cosmic\src\rendering\hlsl\basic_pbr.pixl.hlsl(243,23-60): warning X3570: gradient instruction used in a loop with varying iteration, attempting to unroll the loop
+F:\Telescope\Cosmic\Cosmic\src\rendering\hlsl\basic_pbr.pixl.hlsl(259,23-60): warning X3570: gradient instruction used in a loop with varying iteration, attempting to unroll the loop
+F:\Telescope\Cosmic\Cosmic\src\rendering\hlsl\basic_pbr.pixl.hlsl(243,23-60): warning X3570: gradient instruction used in a loop with varying iteration, attempting to unroll the loop
+  compilation object save succeeded; see F:\Telescope\Cosmic\res\complied_shaders\basic_pbr.pixl.cso
+F:\Telescope\Cosmic\Cosmic\src\rendering\hlsl\basic_pbr.pixl.hlsl(259,23-60): warning X3570: gradient instruction used in a loop with varying iteration, attempting to unroll the loop
+F:\Telescope\Cosmic\Cosmic\src\rendering\hlsl\basic_pbr.pixl.hlsl(324,3): warning X4000: use of potentially uninitialized variable (ShadowCalculation)
+F:\Telescope\Cosmic\Cosmic\src\rendering\hlsl\basic_pbr.pixl.hlsl(352,2): warning X4000: use of potentially uninitialized variable (ShadowCalculation)
+  
   Cosmic.vcxproj -> F:\Telescope\Cosmic\build\x64\Debug\Cosmic.exe

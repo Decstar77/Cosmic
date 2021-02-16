@@ -11,6 +11,7 @@
 
 #include "Renderer.h"
 #include "src/core/World.h"
+#include "src/core/Clock.h"
 #include "src/util/MemoryAreana.h"
 
 namespace cm
@@ -78,6 +79,9 @@ namespace cm
 	public:
 		ID3D11Device *device = nullptr;
 		ID3D11DeviceContext *context = nullptr;
+
+		ID3D11RasterizerState *rs_standard_state = nullptr;
+		ID3D11RasterizerState *rs_shadow_state = nullptr;
 
 		IDXGISwapChain *swapchain = nullptr;
 

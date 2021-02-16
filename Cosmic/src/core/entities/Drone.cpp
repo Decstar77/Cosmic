@@ -128,7 +128,7 @@ namespace cm
 
 	void Drone::Start()
 	{
-		SetMesh(GameState::GetAssetTable()->FindMeshInstance("SM_Prop_Drone_Insect_01"));
+		SetMesh(GameState::GetAssetTable()->FindMeshInstance("SM_Prop_Atm_01"));
 		transform.position = Vec3f(0, 3, 0);
 		transform.orientation = EulerToQuat(Vec3f(0, 90, 0));
 	}

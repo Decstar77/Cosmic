@@ -1,20 +1,21 @@
 ﻿  Main.cpp
-  JobSystem.cpp
+  Grid.cpp
   Physics.cpp
   Player.cpp
   World.cpp
   Drone.cpp
-  Entity.cpp
-  GameCamera.cpp
   Particles.cpp
-  Turret.cpp
   Editor.cpp
   GeneralWindow.cpp
+  DXConstantBuffer.cpp
+  DXMesh.cpp
+  DXRenderTarget.cpp
+  DXShader.cpp
+  DXTexture.cpp
   DirectX11Renderer.cpp
-  Assets.cpp
   Generating code
-  318 of 5254 functions ( 6.1%) were compiled, the rest were copied from previous compilation.
-    168 functions were new in current compilation
-    112 functions had inline decision re-evaluated but remain unchanged
+  4 of 6169 functions (<0.1%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    3 functions had inline decision re-evaluated but remain unchanged
   Finished generating code
   Cosmic.vcxproj -> F:\Telescope\Cosmic\build\x64\Release\Cosmic.exe

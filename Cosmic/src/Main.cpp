@@ -173,7 +173,6 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 			}
 
 			graphics_context->Present();
-
 			clock.End();
 			dt = clock.Get().delta_seconds;
 			clock.Start();
@@ -183,8 +182,5 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 	{
 		Platform::ErrorBox("Could not open window");
 	}
-
-	int a = 2;
-
 }
 #endif

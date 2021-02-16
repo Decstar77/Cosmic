@@ -272,11 +272,20 @@ namespace cm
 		}
 		if (ImGui::CollapsingHeader("Perfomance"))
 		{
+			for (std::pair<String, TimeResult> result : ProfilerClock::time_results)
+			{
+				StringStream ss;
+				ss << (result.second.delta_milliseconds) << " ms";
 
+				ImGui::Text(result.first.c_str());
+				ImGui::SameLine();
+				ImGui::Text(ss.str().c_str());
+			}
 		}
 		if (ImGui::CollapsingHeader("Config"))
 		{
-
+			ImGui::InputFloat("Light size", &game_state->light_size, 0.01f);
+			ImGui::InputFloat("Blokcer size", &game_state->blocker_size, 0.01f);
 		}
 		if (ImGui::CollapsingHeader("Debug"))
 		{

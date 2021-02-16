@@ -178,6 +178,7 @@
     <ClInclude Include="src\core\World.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\core\Clock.cpp" />
     <ClCompile Include="src\rendering\BufferLayout.cpp" />
     <ClCompile Include="src\rendering\DXConstantBuffer.cpp" />
     <ClCompile Include="src\rendering\DXDebug.cpp" />
